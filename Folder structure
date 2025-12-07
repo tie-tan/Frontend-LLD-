@@ -1,0 +1,168 @@
+import { StyleSheet, Text, View, TextInput, Button } from 'react-native';
+import { useState } from 'react';
+import json from './sampledata.json';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const Tree = ({ data, addData, isexpanded, setisexpanded, handleDelete }) => {
+
+  // below 3 are used only when we want to add or dlete
+  const [selectedid, setselectedid] = useState(null);
+  const [name, setname] = useState('');
+  const [isfolder, setisfolder] = useState(false);
+
+  return (
+    <View style={{ paddingLeft: 5 }}>
+      {data.map((item) => (
+        <View key={item.id} style={{ marginVertical: 4 }}>
+          <View style={{ flexDirection: 'row' }}>
+            <Text
+              onPress={(prev) =>
+                item.children &&
+                setisexpanded((prev) => ({
+                  ...prev,
+                  [item.id]: !prev[item.id],
+                }))
+              }>
+              {item.children ? (isexpanded[item.id] ? ' -' : ' +') : ' .'}
+            </Text>
+            <Text style={{fontSize: 15}}>{item.name}</Text>
+
+              // add folder button
+            {item.children && (
+              <Icon
+                name="folder-plus"
+                size={20}
+                color="blue"
+                style={{ marginLeft: 8 }}
+                onPress={() => {
+                  setselectedid(item.id);
+                  setisfolder(true);
+                }}
+              />
+            )}
+
+            // add file button
+            {item.children && (
+              <Icon
+                name="file-plus"
+                size={20}
+                color="green"
+                style={{ marginLeft: 8 }}
+                onPress={() => {
+                  setselectedid(item.id);
+                  setisfolder(false);
+                }}
+              />
+            )}
+            
+            // delte file or folder
+            <Text
+              style={{ marginLeft: 10, color: 'red' }}
+              onPress={() => handleDelete(item.id)}>
+              X
+            </Text>
+          </View>
+
+            // adding a new file or folder 
+          {selectedid === item.id && (
+            <View style={{ flexDirection: 'row' }}>
+              <TextInput
+                style={{ borderColor: '000000', borderWidth: 1, width: 200 }}
+                placeholder={'enter Name'}
+                value={name}
+                onChangeText={setname}
+              />
+              <Button
+                title="ok"
+                onPress={() => {
+                  if (name.trim().length > 0) addData(item.id, name, isfolder);
+                  setname('');
+                  setisfolder(false);
+                  setselectedid(null);
+                  setisexpanded((prev) => ({
+                    ...prev,
+                    [item.id]: true,
+                  }));
+                }}
+              />
+            </View>
+          )}
+
+          //recrussion
+          {item.children && isexpanded[item.id] && (
+            <Tree
+              data={item.children}
+              addData={addData}
+              isexpanded={isexpanded}
+              setisexpanded={setisexpanded}
+              handleDelete={handleDelete}
+            />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+};
+
+export default function App() {
+  const [data, setdata] = useState(json);
+  const [isexpanded, setisexpanded] = useState({});
+
+  // add file or folder
+  const update = (id, name, isfolder, arr = data) => {
+    return arr.map((node) => {
+      if (node.id === id) {
+        const newobj = isfolder
+          ? {
+              id: Date.now(),
+              name: name,
+              children: [],
+            }
+          : {
+              id: Date.now(),
+              name: name,
+            };
+        return { ...node, children: [...node.children, newobj] };
+      }
+
+      if (node.children)
+        return { ...node, children: update(id, name, isfolder, node.children) };
+
+      return node;
+    });
+  };
+
+  const handleadd = (id, name, isfolder) => {
+    const newdata = update(id, name, isfolder);
+    setdata(newdata);
+  };
+
+  // delte file or folder
+  const deleteNode = (id, arr = data) => {
+    return arr
+      .filter((node) => node.id !== id)
+      .map((node) =>
+        node.children
+          ? { ...node, children: deleteNode(id, node.children) }
+          : node
+      );
+  };
+
+  const handleDelete = (id) => {
+    const newdata = deleteNode(id);
+    setdata(newdata);
+  };
+
+  return (
+    <View style={{ marginLeft: 20, paddingTop: 50 }}>
+      <Text style={{ fontSize: 20, marginBottom: 5 }}>File System</Text>
+      <Tree
+        data={data}
+        addData={handleadd}
+        isexpanded={isexpanded}
+        setisexpanded={setisexpanded}
+        handleDelete={handleDelete}
+      />
+    </View>
+  );
+}
