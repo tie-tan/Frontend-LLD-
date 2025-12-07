@@ -166,3 +166,13 @@ export default function App() {
     </View>
   );
 }
+
+// O(n) for all the operations
+
+// this way we can do effiecnt performace O(1), if we sstore data in this way
+const nodes = {
+  1: { id: 1, name: 'src', children: [2, 3], parent: null },
+  2: { id: 2, name: 'index.js', children: [], parent: 1 },
+  3: { id: 3, name: 'components', children: [4], parent: 1 },
+  4: { id: 4, name: 'Button.js', children: [], parent: 3 }
+};
