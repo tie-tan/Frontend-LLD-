@@ -1,0 +1,194 @@
+import { View, Text, TextInput, Button, FlatList } from "react-native";
+import { useState, useMemo } from "react";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
+const initialNodes = {
+  "1": { id: "1", name: "src", type: "folder", parent: null, children: ["2","3"], isExpanded: true },
+  "2": { id: "2", name: "index.js", type: "file", parent: "1", children: [] },
+  "3": { id: "3", name: "components", type: "folder", parent: "1", children: ["4"], isExpanded: false },
+  "4": { id: "4", name: "Button.js", type: "file", parent: "3", children: [] },
+};
+
+export default function App() {
+  const [nodes, setNodes] = useState(initialNodes);
+  const [selectedParent, setSelectedParent] = useState(null);
+  const [name, setName] = useState("");
+  const [isFolder, setIsFolder] = useState(false);
+
+  // -----------------------------------------
+  // FLATTEN TREE -> VISIBLE LIST makes every operatiiion O(1)
+  // -----------------------------------------
+  const flattenTree = (rootId, nodes) => {
+    const result = [];
+
+    const dfs = (id, depth) => {
+      const node = nodes[id];
+      if (!node) return;
+
+      result.push({ id, depth });
+
+      if (node.type === "folder" && node.isExpanded) {
+        node.children.forEach((childId) => dfs(childId, depth + 1));
+      }
+    };
+
+    dfs(rootId, 0);
+    return result;
+  };
+
+  const visibleList = useMemo(() => flattenTree("1", nodes), [nodes]);
+
+  // -----------------------------------------
+  // ADD NODE
+  // -----------------------------------------
+  const handleAdd = (parentId, name, isFolder) => {
+    const newId = Date.now().toString();
+
+    const newNode = {
+      id: newId,
+      name,
+      type: isFolder ? "folder" : "file",
+      parent: parentId,
+      children: isFolder ? [] : [],
+      isExpanded: false,
+    };
+
+    const newNodes = { ...nodes };
+    newNodes[newId] = newNode;
+
+    newNodes[parentId].children = [...newNodes[parentId].children, newId];
+    newNodes[parentId].isExpanded = true;
+
+    setNodes(newNodes);
+  };
+
+  // -----------------------------------------
+  // DELETE NODE (RECURSIVE)
+  // -----------------------------------------
+  const deleteRecursively = (id, draft) => {
+    const node = draft[id];
+    node.children.forEach((childId) => deleteRecursively(childId, draft));
+    delete draft[id];
+  };
+
+  const handleDelete = (id) => {
+    const draft = { ...nodes };
+    const parentId = draft[id].parent;
+
+    if (parentId) {
+      draft[parentId].children = draft[parentId].children.filter(
+        (child) => child !== id
+      );
+    }
+
+    deleteRecursively(id, draft);
+    setNodes(draft);
+  };
+
+  // -----------------------------------------
+  // TOGGLE EXPAND
+  // -----------------------------------------
+  const toggleExpand = (id) => {
+    const newNodes = { ...nodes };
+    newNodes[id].isExpanded = !newNodes[id].isExpanded;
+    setNodes(newNodes);
+  };
+
+  // -----------------------------------------
+  // RENDER ROW
+  // -----------------------------------------
+  const renderItem = ({ item }) => {
+    const node = nodes[item.id];
+
+    return (
+      <View
+        style={{
+          flexDirection: "row",
+          paddingVertical: 4,
+          paddingLeft: item.depth * 15,
+          alignItems: "center",
+        }}
+      >
+        {/* Expand Icon */}
+        {node.type === "folder" ? (
+          <Text style={{ width: 18 }} onPress={() => toggleExpand(node.id)}>
+            {node.isExpanded ? "-" : "+"}
+          </Text>
+        ) : (
+          <Text style={{ width: 18 }}>•</Text>
+        )}
+
+        {/* Name */}
+        <Text style={{ fontSize: 15 }}>{node.name}</Text>
+
+        {/* Add folder */}
+        {node.type === "folder" && (
+          <Icon
+            name="folder-plus"
+            size={20}
+            color="blue"
+            style={{ marginLeft: 8 }}
+            onPress={() => {
+              setSelectedParent(node.id);
+              setIsFolder(true);
+            }}
+          />
+        )}
+
+        {/* Add file */}
+        {node.type === "folder" && (
+          <Icon
+            name="file-plus"
+            size={20}
+            color="green"
+            style={{ marginLeft: 8 }}
+            onPress={() => {
+              setSelectedParent(node.id);
+              setIsFolder(false);
+            }}
+          />
+        )}
+
+        {/* Delete */}
+        <Text
+          style={{ marginLeft: 10, color: "red" }}
+          onPress={() => handleDelete(node.id)}
+        >
+          X
+        </Text>
+
+        {/* Add new file/folder UI */}
+        {selectedParent === node.id && (
+          <View style={{ flexDirection: "row", marginLeft: 10 }}>
+            <TextInput
+              style={{ borderWidth: 1, width: 120 }}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter name"
+            />
+            <Button
+              title="OK"
+              onPress={() => {
+                if (name.trim()) handleAdd(node.id, name, isFolder);
+                setName("");
+                setSelectedParent(null);
+              }}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <View style={{ paddingTop: 50, paddingLeft: 10 }}>
+      <Text style={{ fontSize: 20, marginBottom: 10 }}>File System</Text>
+
+      <FlatList
+        data={visibleList}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
+    </View>
+  );
+}
