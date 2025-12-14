@@ -1,0 +1,103 @@
+import { useState, useEffect } from "react";
+
+const Game = ({ val }) => {
+  const [data, setData] = useState(
+    Array.from({ length: val }, () => Array(val).fill("")),
+  );
+  useEffect(() => {
+    setData(Array.from({ length: val }, () => Array(val).fill("")));
+  }, [val]);
+
+  const [showWinner, setShowWinner] = useState("");
+
+  const [player, setPlayer] = useState("X");
+
+  const handleOnClick = (i, j, val) => {
+    if (data[i][j] != "" || showWinner) return;
+
+    const updatedArray = JSON.parse(JSON.stringify(data));
+    updatedArray[i][j] = val;
+
+    if (updatedArray[i].every((item) => item == val)) {
+      setShowWinner(val);
+    } else if (updatedArray.every((row) => row[j] == val)) {
+      setShowWinner(val);
+    } else if (i == j || i + j == val - 1) {
+      if (updatedArray.every((row, index) => row[index] == val)) {
+        setShowWinner(val);
+      } else if (
+        updatedArray.every((row, index) => row[val - 1 - index] == val)
+      ) {
+        setShowWinner(val);
+      }
+    } else if (updatedArray.flat().every((cell) => cell !== "")) {
+      setShowWinner("Draw");
+    }
+
+    setData(updatedArray);
+    setPlayer((prev) => (prev == "X" ? "O" : "X"));
+  };
+
+  return (
+    <div>
+      {showWinner ? (
+        <p>Player {showWinner} is the winner</p>
+      ) : (
+        <p> Player {player} turn</p>
+      )}
+      <table style={{ borderCollapse: "collapse" }}>
+        {data.map((val, index) => {
+          return (
+            <tr>
+              {val.map((item, ind) => {
+                return (
+                  <td
+                    onClick={() => handleOnClick(index, ind, player)}
+                    style={{
+                      border: "1px solid black",
+                      height: "100px",
+                      width: "100px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      {item}{" "}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </table>
+      <button
+        onClick={() => {
+          setData(Array.from({ length: val }, () => Array(val).fill("")));
+          setPlayer("X");
+          setShowWinner("");
+        }}
+      >
+        RESET
+      </button>
+    </div>
+  );
+};
+
+export default function App() {
+  const [state, setState] = useState(0);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    setState(parseInt(formData.get("matrixSize")));
+  };
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        <label>Matrix Size {"  "}</label>
+        <input name="matrixSize" type="number" min="0" max="5" />
+        <button type="submit">Apply</button>
+      </form>
+      <Game val={state} />
+    </>
+  );
+}
