@@ -1,103 +1,101 @@
-import { useState, useEffect } from "react";
-
-const Game = ({ val }) => {
-  const [data, setData] = useState(
-    Array.from({ length: val }, () => Array(val).fill("")),
-  );
-  useEffect(() => {
-    setData(Array.from({ length: val }, () => Array(val).fill("")));
-  }, [val]);
-
-  const [showWinner, setShowWinner] = useState("");
-
-  const [player, setPlayer] = useState("X");
-
-  const handleOnClick = (i, j, val) => {
-    if (data[i][j] != "" || showWinner) return;
-
-    const updatedArray = JSON.parse(JSON.stringify(data));
-    updatedArray[i][j] = val;
-
-    if (updatedArray[i].every((item) => item == val)) {
-      setShowWinner(val);
-    } else if (updatedArray.every((row) => row[j] == val)) {
-      setShowWinner(val);
-    } else if (i == j || i + j == val - 1) {
-      if (updatedArray.every((row, index) => row[index] == val)) {
-        setShowWinner(val);
-      } else if (
-        updatedArray.every((row, index) => row[val - 1 - index] == val)
-      ) {
-        setShowWinner(val);
-      }
-    } else if (updatedArray.flat().every((cell) => cell !== "")) {
-      setShowWinner("Draw");
-    }
-
-    setData(updatedArray);
-    setPlayer((prev) => (prev == "X" ? "O" : "X"));
-  };
-
-  return (
-    <div>
-      {showWinner ? (
-        <p>Player {showWinner} is the winner</p>
-      ) : (
-        <p> Player {player} turn</p>
-      )}
-      <table style={{ borderCollapse: "collapse" }}>
-        {data.map((val, index) => {
-          return (
-            <tr>
-              {val.map((item, ind) => {
-                return (
-                  <td
-                    onClick={() => handleOnClick(index, ind, player)}
-                    style={{
-                      border: "1px solid black",
-                      height: "100px",
-                      width: "100px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      {item}{" "}
-                    </div>
-                  </td>
-                );
-              })}
-            </tr>
-          );
-        })}
-      </table>
-      <button
-        onClick={() => {
-          setData(Array.from({ length: val }, () => Array(val).fill("")));
-          setPlayer("X");
-          setShowWinner("");
-        }}
-      >
-        RESET
-      </button>
-    </div>
-  );
-};
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useState } from "react";
 
 export default function App() {
-  const [state, setState] = useState(0);
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    setState(parseInt(formData.get("matrixSize")));
+  const [board, setBoard] = useState(Array(9).fill(null));
+  const [isXNext, setIsXNext] = useState(true);
+  const winner = checkWinner(board);
+
+  const handlePress = (index) => {
+    if (board[index] || winner) return;      // if clicked again at already filled
+
+    const newBoard = [...board];
+    newBoard[index] = isXNext ? "X" : "O";
+
+    setBoard(newBoard); 
+    setIsXNext(!isXNext);
   };
+
+  const resetGame = () => {
+    setBoard(Array(9).fill(null));
+    setIsXNext(true);
+  };
+
   return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <label>Matrix Size {"  "}</label>
-        <input name="matrixSize" type="number" min="0" max="5" />
-        <button type="submit">Apply</button>
-      </form>
-      <Game val={state} />
-    </>
+    <View style={styles.container}>
+      <Text style={styles.title}>
+        {winner
+          ? winner === "DRAW"
+            ? "Draw!"
+            : `Winner: ${winner}`
+          : `Turn: ${isXNext ? "X" : "O"}`}
+      </Text>
+
+      <View style={styles.board}>
+        {board.map((cell, index) => (
+          <Pressable
+            key={index}
+            style={styles.cell}
+            onPress={() => handlePress(index)}
+          >
+            <Text style={styles.cellText}>{cell}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable style={styles.reset} onPress={resetGame}>
+        <Text style={{ color: "white" }}>Reset</Text>
+      </Pressable>
+    </View>
   );
 }
+
+function checkWinner(board) {    // after every rerender this is called
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  for (let [a,b,c] of lines) {
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return board[a];
+    }
+  }
+
+  return board.includes(null) ? null : "DRAW";
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  title: {
+    fontSize: 22,
+    marginBottom: 20
+  },
+  board: {
+    width: 300,
+    flexDirection: "row",
+    flexWrap: "wrap"
+  },
+  cell: {
+    width: 100,
+    height: 100,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  cellText: {
+    fontSize: 40,
+    fontWeight: "bold"
+  },
+  reset: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "black",
+    borderRadius: 5
+  }
+});
