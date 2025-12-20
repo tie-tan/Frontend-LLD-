@@ -1,0 +1,93 @@
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
+
+
+export default function App() {
+
+  const [posts, setposts] = useState([]);
+  const [currentPage, setcurrent] = useState(0);
+
+// fetch data and set
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/todos")
+      .then(res => res.json())
+      .then(data => setposts(data));
+  }, []);
+
+
+  const Post = ({ current }) => {
+    let start = current*10;
+    let end = Math.min(current*10 +10, posts.length);
+
+    let pages = [];
+    for (let i = start; i < end; i++) {
+      pages.push(
+        <Text key={i} style={styles.text}>
+          {posts[i].title}
+        </Text>
+      );
+    }
+    return pages;
+  };
+
+// 10 pages at a time
+  const Pages = ({ current }) => {
+    let start = Math.max(0, current - 4);
+    let end = Math.min(posts.length/10, current + 5);
+
+    let res = [];
+
+    res.push(
+      <Text key="prev" style={styles.text} onPress={() => setcurrent(current-1)} disabled={current===0}>
+        Prev
+      </Text>
+    );
+
+    for (let i = start; i < end; i++) {
+      res.push(
+        <Text
+          key={i}
+          style={[
+            styles.text,
+            { color: i === current ? 'red' : 'black' },
+          ]}
+          onPress={() => setcurrent(i)}
+        >
+          {i + 1}
+        </Text>
+      );
+    }
+
+    res.push(
+      <Text key="next" style={styles.text}  onPress={() => setcurrent(current+1)} >
+        Next
+      </Text>
+    );
+
+    return res;
+  };
+
+ return (
+    <View style={{ flex: 1 }}> 
+        <View style={styles.container}>
+          <Pages  current={currentPage} />
+        </View>
+      <ScrollView style={{ flex: 1 }}>
+        <Post current={currentPage} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    marginTop: 100,
+    marginLeft: 30,
+  },
+  text: {
+    fontSize: 20,
+    margin: 10,
+  },
+  
+});
