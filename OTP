@@ -1,0 +1,73 @@
+import { StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+
+export default function App() {
+  const [otp, setOtp] = useState(Array(4).fill(""));
+  const [curr, setCurr] = useState(0);
+
+  const inputRefs = useRef([]);
+
+  const handleChange = (text, index) => {
+    const newOtp = [...otp];
+    newOtp[index] = text;
+    setOtp(newOtp);
+
+    if (text && index < otp.length - 1) {
+      setCurr(index + 1);
+      inputRefs.current[index + 1].focus();
+    }
+  };
+
+// bring focus to next box 
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      setCurr(index - 1);
+      inputRefs.current[index - 1].focus();
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {otp.map((_, ind) => (
+        <View
+          key={ind}
+          style={[
+            styles.textbox,
+            { borderColor: ind === curr ? 'red' : 'blue' },
+          ]}
+        >
+          <TextInput
+            ref={(ref) => (inputRefs.current[ind] = ref)}
+            style={styles.text}
+            value={otp[ind]}
+            keyboardType="numeric"
+            maxLength={1}
+            onChangeText={(text) => handleChange(text, ind)}
+            onKeyPress={(e) => handleKeyPress(e, ind)}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 100,
+    marginHorizontal: 30,
+    flexDirection: 'row'
+  },
+  textbox: {
+    margin: 3,
+    borderWidth: 2,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+   alignItems: 'center'
+  },
+  text: {
+     fontSize: 18,
+  }
+  
+});
