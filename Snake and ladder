@@ -1,0 +1,223 @@
+import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity, 
+  SafeAreaView, 
+  Alert, 
+  Dimensions 
+} from 'react-native';
+
+// Get screen width to make the board responsive
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const BOARD_SIZE = SCREEN_WIDTH - 20;
+const CELL_SIZE = BOARD_SIZE / 10;
+
+// Game Configuration: Start Node -> End Node
+const SPECIAL_TILES = {
+  // Ladders (Up)
+  2: 23, 8: 34, 20: 77, 32: 68, 41: 79, 74: 88, 82: 100,
+  // Snakes (Down)
+  29: 9, 38: 15, 47: 5, 53: 33, 62: 37, 86: 54, 92: 70, 97: 25
+};
+
+export default function App() {
+  const [playerPosition, setPosition] = useState(1);
+  const [lastRoll, setLastRoll] = useState(0);
+
+  const rollDice = () => {
+    const roll = Math.floor(Math.random() * 6) + 1;
+    setLastRoll(roll);
+    
+    let newPos = playerPosition + roll;
+
+    // Boundary Check
+    if (newPos > 100) {
+      Alert.alert("Try again!", `You rolled a ${roll}, but you need exactly ${100 - playerPosition} to win.`);
+      return;
+    }
+
+    // Move Player and Check for Snakes/Ladders
+    if (SPECIAL_TILES[newPos]) {
+      const isLadder = SPECIAL_TILES[newPos] > newPos;
+      const message = isLadder ? "LADDER! 🪜" : "SNAKE! 🐍";
+      
+      // Delay slightly so user sees initial move
+      setPosition(newPos);
+      setTimeout(() => {
+        Alert.alert(message, `Moving to ${SPECIAL_TILES[newPos]}`);
+        setPosition(SPECIAL_TILES[newPos]);
+      }, 300);
+    } else {
+      setPosition(newPos);
+    }
+
+    // Win Check
+    if (newPos === 100) {
+      Alert.alert("CONGRATULATIONS!", "You won the game!", [
+        { text: "Play Again", onPress: () => setPosition(1) }
+      ]);
+    }
+  };
+
+  const renderCells = () => {
+    let cells = [];
+    // We render from 90s down to 0s to put 100 at the top
+    for (let row = 9; row >= 0; row--) {
+      let rowCells = [];
+      for (let col = 0; col < 10; col++) {
+        // This math handles the "Boustrophedon" (Zig-Zag) numbering
+        let cellNum;
+        if (row % 2 !== 0) {
+          // Odd rows (1, 3, 5...) go Right to Left
+          cellNum = (row * 10) + (10 - col);
+        } else {
+          // Even rows (0, 2, 4...) go Left to Right
+          cellNum = (row * 10) + (col + 1);
+        }
+
+        const isPlayerHere = playerPosition === cellNum;
+        const special = SPECIAL_TILES[cellNum];
+
+        rowCells.push(
+          <View key={cellNum} style={[styles.cell, isPlayerHere && styles.activeCell]}>
+            <Text style={[styles.cellText, isPlayerHere && styles.activeText]}>
+              {cellNum}
+            </Text>
+            {special && (
+              <Text style={styles.icon}>
+                {special > cellNum ? '🪜' : '🐍'}
+              </Text>
+            )}
+            {isPlayerHere && <View style={styles.playerToken} />}
+          </View>
+        );
+      }
+      cells.push(<View key={row} style={styles.row}>{rowCells}</View>);
+    }
+    return cells;
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Snakes & Ladders</Text>
+      
+      <View style={styles.board}>
+        {renderCells()}
+      </View>
+
+      <View style={styles.controls}>
+        <View style={styles.diceContainer}>
+          <Text style={styles.diceLabel}>Dice</Text>
+          <Text style={styles.diceValue}>{lastRoll || '-'}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.rollButton} onPress={rollDice}>
+          <Text style={styles.rollButtonText}>ROLL DICE</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.statusText}>Position: {playerPosition} / 100</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f4f4f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+  },
+  board: {
+    width: BOARD_SIZE,
+    height: BOARD_SIZE,
+    backgroundColor: '#fff',
+    borderWidth: 3,
+    borderColor: '#444',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+  },
+  row: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  cell: {
+    flex: 1,
+    borderWidth: 0.5,
+    borderColor: '#ddd',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeCell: {
+    backgroundColor: '#ebf5ff',
+  },
+  cellText: {
+    fontSize: 10,
+    color: '#999',
+  },
+  activeText: {
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  playerToken: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FF3B30',
+    position: 'absolute',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  icon: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    fontSize: 10,
+  },
+  controls: {
+    marginTop: 30,
+    alignItems: 'center',
+    width: '100%',
+  },
+  diceContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  diceLabel: {
+    fontSize: 12,
+    color: '#666',
+    textTransform: 'uppercase',
+  },
+  diceValue: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  rollButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 30,
+    elevation: 3,
+  },
+  rollButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statusText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#555',
+  },
+});
