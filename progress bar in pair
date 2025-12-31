@@ -1,0 +1,115 @@
+import { StyleSheet, View, Button, Animated, ScrollView, SafeAreaView } from 'react-native';
+import { useState, useRef } from 'react';
+
+export default function App() {
+  const [bars, setBars] = useState([]);
+  const animationsRef = useRef([]);
+
+  const addBar = () => {
+    setBars([...bars, new Animated.Value(0)]);
+  };
+
+  const startInPairs = (index = 0) => {
+    // 1. Base case: If index is out of bounds, stop.
+    if (index >= bars.length) return;
+
+    // 2. Prepare the batch (current bar and the next one)
+    const animationsToStart = [];
+    
+    // Always add the first bar of the pair
+    animationsToStart.push(
+      Animated.timing(bars[index], {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: false,
+      })
+    );
+
+    // If a second bar exists in this pair, add it too
+    if (bars[index + 1]) {
+      animationsToStart.push(
+        Animated.timing(bars[index + 1], {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        })
+      );
+    }
+
+    // 3. Run the batch in parallel
+    const group = Animated.parallel(animationsToStart);
+    animationsRef.current.push(group);
+
+    group.start(({ finished }) => {
+      if (finished) {
+        // 4. Once the pair is done, move to the next pair (index + 2)
+        startInPairs(index + 2);
+      }
+    });
+  };
+
+  const resetBars = () => {
+    animationsRef.current.forEach(a => a.stop());
+    bars.forEach(b => b.setValue(0));
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollArea}>
+        {bars.map((animValue, i) => {
+          const widthInterpolate = animValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', '100%'],
+          });
+
+          return (
+            <View key={i} style={styles.box}>
+              <Animated.View 
+                style={[styles.fill, { width: widthInterpolate }]} 
+              />
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.buttonRow}>
+        <Button title="Add Bar" onPress={addBar} color="#2196F3" />
+        <Button title="Start Pairs" onPress={() => startInPairs(0)} color="#4CAF50" />
+        <Button title="Reset" onPress={resetBars} color="#F44336" />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollArea: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  box: {
+    width: 300,
+    height: 20,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 10,
+    marginBottom: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ccc'
+  },
+  fill: {
+    backgroundColor: '#ff5252',
+    height: '100%',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    paddingVertical: 20,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderColor: '#ddd'
+  },
+});
