@@ -1,0 +1,63 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableWithoutFeedback, Dimensions } from 'react-native';
+
+
+export default function App() {
+ const [circles, setCircles] = useState([]);
+
+  const handlePress = (event) => {
+    // pageX/Y are coordinates relative to the entire screen
+    const { pageX, pageY } = event.nativeEvent;
+    
+    console.log(`Touch detected at: X=${pageX}, Y=${pageY}`);
+
+    const newCircle = {
+      id: Math.random().toString(),
+      x: pageX,
+      y: pageY,
+    };
+
+    setCircles((prev) => [...prev, newCircle]);
+  };
+
+  return (
+    // TouchableWithoutFeedback is great for full-screen taps
+    <TouchableWithoutFeedback onPress={handlePress}>
+      <View style={styles.container}>
+        {circles.map((circle) => (
+          <View
+            key={circle.id}
+            style={[
+              styles.circle,
+              {
+                // Explicitly setting the position
+                top: circle.y-15, 
+                left: circle.x-15,
+              },
+            ]}
+          />
+        ))}
+      </View>
+    </TouchableWithoutFeedback>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    // This MUST be flex: 1 and have NO centering properties
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'flex-start',   // Forces children to start at left
+    justifyContent: 'flex-start', // Forces children to start at top
+  },
+  circle: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'red',
+    // Elevation ensures it sits above the background
+    elevation: 5, 
+    zIndex: 10,
+  },
+});
