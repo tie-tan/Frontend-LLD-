@@ -1,0 +1,52 @@
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { useState } from 'react';
+
+export default function App() {
+  const [end, setEnd] = useState(100);
+
+  const renderData = () => {
+    let ele = [];
+    for (let i = 1; i <= end; i++) {
+      ele.push(
+        <Text key={i} style={styles.item}>
+          {i}
+        </Text>
+      );
+    }
+    return ele;
+  };
+
+  const onScroll = ({ nativeEvent }) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+
+    // check if user reached near bottom
+    if (
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - 30
+    ) {
+      setEnd(prev => prev + 50);
+    }
+  };
+
+  return (
+    <ScrollView
+      style={styles.container}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+    >
+      {renderData()}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    margin: 50,
+    backgroundColor: '#ecf0f1',
+  },
+  item: {
+    fontSize: 18,
+    padding: 8,
+  },
+});
