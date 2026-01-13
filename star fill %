@@ -1,0 +1,92 @@
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+
+const STAR_COUNT = 5;
+const STAR_SIZE = 40;
+
+export default function App() {
+  const [rating, setRating] = useState(0);
+
+  const handleTouch = (index, event) => {
+    const locationX = event.nativeEvent.locationX || 0;
+    const fraction = Math.min(Math.max(locationX / STAR_SIZE, 0), 1);
+    const value = index + fraction;
+    setRating(value);
+  };
+
+  const getFillPercent = (index) => {
+    if (rating >= index + 1) return 1;
+    if (rating <= index) return 0;     
+    return rating - index;             
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Click Percentage Star Rating</Text>
+
+      <View style={styles.row}>
+        {[...Array(STAR_COUNT)].map((_, index) => {
+          const fillPercent = getFillPercent(index);
+
+          return (
+            <Pressable
+              key={index}
+              onPressIn={(e) => handleTouch(index, e)} // use onPressIn
+              style={{ width: STAR_SIZE, height: STAR_SIZE }}
+            >
+
+              <Text style={styles.starEmpty}>★</Text>
+
+              <View
+                style={[
+                  styles.starFillWrapper,
+                  { width: STAR_SIZE * fillPercent },
+                ]}
+              >
+                <Text style={styles.starFilled}>★</Text>
+              </View>
+              
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={styles.text}>Rating: {rating.toFixed(2)}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#111",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: "row",
+  },
+  starEmpty: {
+    fontSize: STAR_SIZE,
+    color: "#555",
+    position: "absolute",
+  },
+  starFilled: {
+    fontSize: STAR_SIZE,
+    color: "#FFD700",
+  },
+  starFillWrapper: {
+    overflow: "hidden",
+    position: "absolute",
+  },
+  text: {
+    color: "#fff",
+    marginTop: 20,
+    fontSize: 18,
+  },
+});
