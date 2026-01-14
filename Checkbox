@@ -1,0 +1,114 @@
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable, InputBox, TextInput } from "react-native";
+
+
+
+export default function App() {
+   const [data, setData] = useState([
+    {
+      id: 1,
+      label: "Parent",
+      checked: false,
+      children: [
+        { id: 11, label: "Child 1", checked: true },
+        { id: 12, label: "Child 2", checked: false },
+      ],
+    },
+  ]);
+
+  const updatedData = (data, id, tofill, toupdate) => {
+  if (!data) return data;
+
+  return data.map((ele) => {
+    // if node matches
+    if (ele.id === id) {
+      return {
+        ...ele,
+        checked: !ele.checked,
+        children: ele.children
+          ? updatedData(ele.children, id, !ele.checked,true)
+          : ele.children,
+      };
+    }
+
+    if(toupdate){
+      return {
+        ...ele,
+        checked: tofill,
+        children: ele.children ? updatedData(ele.children,id,tofill,true) : ele.children
+      }
+    }
+
+    // otherwise traverse children
+    return {
+      ...ele,
+      children: ele.children
+        ? updatedData(ele.children, id,tofill)
+        : ele.children,
+    };
+  });
+};
+
+const elepressed = (id) => {
+  setData((prev) => updatedData(prev, id,false,false));
+};
+
+
+ 
+
+  const renderdata = (data) => {
+    if (!data || data.length === 0) return null;
+     return (data.map((ele,ind)=>{
+            return (
+              <View style={{marginLeft: 15}}>
+                <View style={{flexDirection: 'row', margin : 4}}>
+                    <Pressable style={{borderWidth: 2, width: 20, margin: 2, backgroundColor: ele.checked && '#000000'}} onPress={()=>elepressed(ele.id)}></Pressable>
+                    <Text >{ele.label}</Text>
+                </View>
+                 {renderdata(ele.children)}
+              </View>
+            )
+         })
+     )
+ }
+
+  return (
+    <View style={styles.container}>
+      { renderdata(data)}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: "row",
+  },
+  starEmpty: {
+
+    color: "#555",
+    position: "absolute",
+  },
+  starFilled: {
+
+    color: "#FFD700",
+  },
+  starFillWrapper: {
+    overflow: "hidden",
+    position: "absolute",
+  },
+  text: {
+    color: "#fff",
+    marginTop: 20,
+    fontSize: 18,
+  },
+});
