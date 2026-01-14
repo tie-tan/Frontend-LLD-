@@ -1,0 +1,142 @@
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable, InputBox, TextInput } from "react-native";
+
+
+
+export default function App() {
+  const [data, setdata] = useState([{id: 0, value: "Rame is good boy", like: 5, dislike: 0, children: [{id: 1, value: "Rame is good boy", like: 5, dislike: 0, children: [] }] }]);
+
+  const [inputvalue,setvalue] = useState("")
+  const [replyto,setreplyto] = useState(null);
+
+const updateddislike = (ele,ind) => {
+    return(
+      ele.map((item)=>{
+          if(item.id === ind){
+              return {
+                ...item,
+                dislike: item.dislike+1
+              }
+          };
+          return {
+            ...item,
+            children: updateddislike(item.children,ind)
+          };
+      })
+    )
+}
+
+  const adddislike = (ind) => {
+      setdata(prev=>updateddislike(prev,ind));
+  }
+
+  const updatedlike = (node,ind) => {
+    return (
+      node.map((ele)=>{
+        if(ele.id === ind){
+            return {
+              ...ele,
+              like: ele.like+1
+            }
+        };
+        return {
+          ...ele,
+          children: updatedlike(ele.children,ind)
+        };
+      })
+    )
+  }
+
+  const addlike = (ind) => {
+    setdata(prev=>updatedlike(prev,ind));
+  }
+
+  const addreply = (ind) => {
+      setreplyto(ind);  
+  }
+
+  const updatedata = (node,ind) => {
+     return (
+      node.map((ele)=>{
+        if(ele.id === ind){
+            return {
+              ...ele,
+              children: [...ele.children, {id: Date.now(), value: inputvalue, like: 0, dislike: 0,children: []}]
+            }
+        };
+        return {
+          ...ele,
+          children: updatedata(ele.children,ind)
+        };
+      })
+    )
+  }
+
+  const addcomment = (ind) => {
+    setdata(prev=>updatedata(prev,ind));
+  }
+
+ const renderdata = (data) => {
+     return (data.map((ele,ind)=>{
+            return (
+              <View style={{marginLeft: 15}}>
+               <Text >{ele.value}</Text>
+              <View style={{flexDirection: 'row', margin : 4}}>
+                  <Text onPress={()=>addlike(ele.id)}>{`Like ${ele.like}  `}</Text>
+                  <Text  onPress={()=>adddislike(ele.id)}>{`dislike ${ele.dislike} `}</Text>
+                  <Text  onPress={()=>addreply(ele.id)}>Reply</Text>
+              </View>
+                 {replyto === ele.id && 
+              <View>
+                    <TextInput title={inputvalue} onChangeText={setvalue} placeholder={"enter comment"} style={{borderWidth: 2}}/>
+                 
+                  <Text  onPress={()=>addcomment(ele.id)}>Add</Text>
+                </View>
+                 }
+                 {renderdata(ele.children)}
+              </View>
+            )
+         })
+     )
+ }
+
+  return (
+    <View style={styles.container}>
+      { renderdata(data)}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: "row",
+  },
+  starEmpty: {
+
+    color: "#555",
+    position: "absolute",
+  },
+  starFilled: {
+
+    color: "#FFD700",
+  },
+  starFillWrapper: {
+    overflow: "hidden",
+    position: "absolute",
+  },
+  text: {
+    color: "#fff",
+    marginTop: 20,
+    fontSize: 18,
+  },
+});
