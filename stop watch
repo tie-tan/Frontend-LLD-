@@ -1,0 +1,68 @@
+import { StyleSheet, Text, View } from 'react-native';
+import {useState, useEffect, useRef} from 'react';
+
+export default function App() {
+  const [seconds,setsecond] = useState(43199);
+  const [isrunning,setisrunnig] = useState(false);
+  const inputref = useRef(null);
+
+  const handlestartstop = () => {
+    if(isrunning){
+      clearInterval(inputref.current);
+    }else{
+      inputref.current = setInterval(()=>{
+        setsecond(prev=>prev+1);
+      },1000);
+    }
+    setisrunnig(!isrunning);
+  }
+  const handlereset = () => {
+      clearInterval(inputref.current);
+      setsecond(0);
+      setisrunnig(false);
+  }
+  useEffect(()=>{
+      return ()=> clearInterval(inputref.current);
+  },[])
+
+  const renderseconds = () =>{
+    let h = Math.floor(seconds/3600);
+    let m = Math.floor(seconds/60)%60;
+    let s = seconds%60;
+    return(
+      <div style={{margin: 10, fontSize: 20}}>
+        <p>{`${h}:${m}:${s}`}</p>
+      </div>
+    )
+  }
+  return (
+    <div style={{flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column'}} >
+        <h1 style={{margin: 10}}>
+          stopwatch
+        </h1>
+          {renderseconds()}
+          <button onClick={handlestartstop} style={{margin: 10, padding: 10, backgroundColor: !isrunning ? 'green' : 'red', color: '#ffffff', borderRadius: 20}}>
+                {isrunning ? "STOP" : "START"}
+            </button>
+             <button onClick={handlereset} style={{padding: 10, backgroundColor: 'red', color: '#3c3434ff', borderRadius: 20}}>
+                {"RESET"}
+            </button>
+
+    </div>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#ecf0f1',
+    padding: 8,
+  },
+  paragraph: {
+    margin: 24,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+});
