@@ -1,0 +1,106 @@
+/***********************
+ * MessageQueue (Broker)
+ ***********************/
+class MessageQueue {
+  constructor() {
+    this.queue = [];
+    this.consumers = new Map(); // id -> consumerFn
+    this.nextId = 1;
+  }
+
+  // Producer pushes message
+  produce(message) {
+    console.log(`\n[Producer] Produced: ${message}`);
+    this.queue.push(message);
+    this.notify();
+  }
+
+  // Consumer subscribes
+  subscribe(consumerFn) {
+    const id = this.nextId++;
+    this.consumers.set(id, consumerFn);
+
+    console.log(`[System] Consumer ${id} subscribed`);
+
+    // return unsubscribe function
+    return () => {
+      this.consumers.delete(id);
+      console.log(`[System] Consumer ${id} unsubscribed`);
+    };
+  }
+
+  // Notify all consumers
+  notify() {
+    while (this.queue.length > 0) {
+      const msg = this.queue.shift();
+
+      this.consumers.forEach((consumerFn, id) => {
+        consumerFn(msg);
+      });
+    }
+  }
+}
+
+/***********************
+ * Producer
+ ***********************/
+class Producer {
+  constructor(queue) {
+    this.queue = queue;
+  }
+
+  submit(message) {
+    this.queue.produce(message);
+  }
+}
+
+/***********************
+ * Consumer
+ ***********************/
+class Consumer {
+  constructor(name, queue) {
+    this.name = name;
+
+    // subscribe and store unsubscribe reference
+    this.unsubscribe = queue.subscribe(this.consume.bind(this));
+  }
+
+  consume(message) {
+    console.log(`[${this.name}] received: ${message}`);
+  }
+
+  stop() {
+    this.unsubscribe();
+  }
+}
+
+/***********************
+ * Simulation
+ ***********************/
+const queue = new MessageQueue();
+const producer = new Producer(queue);
+
+// consumers join
+const c1 = new Consumer("Consumer-1", queue);
+const c2 = new Consumer("Consumer-2", queue);
+
+// producer sends messages
+producer.submit("Hello World");
+producer.submit("Producer Consumer Pattern");
+
+// unsubscribe consumer-1
+c1.stop();
+
+// only consumer-2 should receive this
+producer.submit("After unsubscribe");
+
+// new consumer joins later
+const c3 = new Consumer("Consumer-3", queue);
+
+producer.submit("New consumer joined");
+
+// unsubscribe all
+c2.stop();
+c3.stop();
+
+producer.submit("No one should receive this");
