@@ -1,0 +1,73 @@
+function reconstructUberSequenceDynamic(jumbledTasks, carCapacity = 2) {
+  const pendingTasks = jumbledTasks.map(str => {
+    const parts = str.split(" ");
+    if (parts[0] === "pick") return { type: "pick", user: parts[1], raw: str };
+    if (parts[0] === "drop") return { type: "drop", user: parts[1], raw: str };
+    if (parts[0] === "drive") return { type: "drive", duration: parseInt(parts[1]), raw: str };
+    if (parts[0] === "rest") return { type: "rest", duration: parseInt(parts[1]), raw: str };
+    return null;
+  }).filter(Boolean);
+
+  const sequence = [];
+  const inCar = new Set();
+
+  while (pendingTasks.length > 0) {
+    let progress = false;
+
+    for (let i = 0; i < pendingTasks.length; i++) {
+      const task = pendingTasks[i];
+
+      if (task.type === "pick") {
+        if (inCar.size < carCapacity) {
+          sequence.push(task.raw);
+          inCar.add(task.user);
+          pendingTasks.splice(i, 1);
+          i--;
+          progress = true;
+        }
+      } else if (task.type === "drop") {
+        if (inCar.has(task.user)) {
+          sequence.push(task.raw);
+          inCar.delete(task.user);
+          pendingTasks.splice(i, 1);
+          i--;
+          progress = true;
+        }
+      } else if (task.type === "drive") {
+        if (inCar.size > 0) { // can drive if at least 1 user is in car
+          sequence.push(task.raw);
+          pendingTasks.splice(i, 1);
+          i--;
+          progress = true;
+        }
+      } else if (task.type === "rest") {
+        // can rest anytime
+        sequence.push(task.raw);
+        pendingTasks.splice(i, 1);
+        i--;
+        progress = true;
+      }
+    }
+
+    if (!progress) {
+      throw new Error("Cannot reconstruct sequence: check task dependencies or capacity");
+    }
+  }
+
+  return sequence;
+}
+
+// ------------------ Test ------------------
+const jumbled = [
+  "drive 2",
+  "drop Rahul",
+  "pick TestUser",
+  "pick Rahul",
+  "drive 4",
+  "drop TestUser",
+  "rest 10"
+];
+
+const correctSeq = reconstructUberSequenceDynamic(jumbled, 2);
+console.log("Reconstructed realistic sequence:");
+console.log(correctSeq.join("\n"));
