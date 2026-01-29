@@ -1,0 +1,77 @@
+// Task function type (generic result)
+type TaskFn<T = void> = () => Promise<T>;
+
+// Task object stored in queue
+interface QueuedTask<T = void> {
+  task: TaskFn<T>;
+  priority: number;
+}
+
+class TaskRunner {
+  private limit: number;
+  private running: number;
+  private queue: QueuedTask[];
+
+  constructor(limit: number) {
+    this.limit = limit;
+    this.running = 0;
+    this.queue = [];
+  }
+
+  addTask<T>(task: TaskFn<T>, priority: number = 0): void {
+    if (this.running < this.limit) {
+      this.running++;
+      this.runTask(task);
+    } else {
+      const taskObj: QueuedTask<T> = { task, priority };
+
+      let inserted = false;
+      for (let i = 0; i < this.queue.length; i++) {
+        if (priority > this.queue[i].priority) {
+          this.queue.splice(i, 0, taskObj);
+          inserted = true;
+          break;
+        }
+      }
+
+      if (!inserted) {
+        this.queue.push(taskObj);
+      }
+    }
+  }
+
+  private runTask<T>(task: TaskFn<T>): void {
+    console.log("running", task.name || "anonymous task");
+
+    Promise.resolve()
+      .then(task)
+      .catch(err => console.error("Task failed:", err))
+      .finally(() => {
+        this.running--;
+
+        const nextTaskObj = this.queue.shift();
+        if (nextTaskObj) {
+          this.running++;
+          this.runTask(nextTaskObj.task);
+        }
+      });
+  }
+}
+
+/* ------------------ Example Usage ------------------ */
+
+const runner = new TaskRunner(2);
+
+const createTask = (name: string, delay: number): TaskFn<string> => () =>
+  new Promise(resolve => {
+    setTimeout(() => {
+      console.log("done", name);
+      resolve(name);
+    }, delay);
+  });
+
+// Add tasks
+runner.addTask(createTask("A", 1000), 1); // priority 1
+runner.addTask(createTask("B", 500), 0);  // priority 0
+runner.addTask(createTask("C", 300), 2);  // priority 2
+runner.addTask(createTask("D", 400), 0);  // priority 0
