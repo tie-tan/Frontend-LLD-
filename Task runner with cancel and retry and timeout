@@ -7,6 +7,7 @@ class TaskRunner {
     this.queue = [];                   // pending tasks
     this.lastExecuted = null;          // last finished task name
     this.taskTimeoutSec = taskTimeoutSec; // timeout in seconds for pending tasks
+this.retry = retry // retrytimes
   }
 
   // Add a new task
@@ -63,6 +64,15 @@ class TaskRunner {
       .then(taskObj.fn)
       .then(() => {
         this.lastExecuted = taskObj.name;
+      })
+//retry logic
+ .catch(err => {
+        console.error(`Task ${taskObj.name} failed:`, err);
+        if (taskObj.retries < this.maxRetries) {
+          taskObj.retries++;
+          console.log(`Retrying ${taskObj.name} (retry ${taskObj.retries})`);
+          this.queue.unshift(taskObj); // retry ASAP
+        }
       })
       .finally(() => {
         this.running--;
