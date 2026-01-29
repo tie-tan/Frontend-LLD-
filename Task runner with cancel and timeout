@@ -1,0 +1,122 @@
+// TaskRunner.js
+
+class TaskRunner {
+  constructor(limit = 2, taskTimeoutSec = 5) {
+    this.limit = limit;                // max concurrent tasks
+    this.running = 0;                  // currently running
+    this.queue = [];                   // pending tasks
+    this.lastExecuted = null;          // last finished task name
+    this.taskTimeoutSec = taskTimeoutSec; // timeout in seconds for pending tasks
+  }
+
+  // Add a new task
+  addTask(fn, name) {
+    const taskObj = {
+      fn,
+      name,
+      addedAt: Date.now(),
+      timeoutId: null,
+    };
+
+    // Add to queue
+    this.queue.push(taskObj);
+
+    // Set timeout to auto-remove if not started in t seconds
+    taskObj.timeoutId = setTimeout(() => {
+      const index = this.queue.indexOf(taskObj);
+      if (index !== -1) {
+        this.queue.splice(index, 1);
+        console.log(`Task ${taskObj.name} timed out and removed`);
+      }
+    }, this.taskTimeoutSec * 1000);
+
+    this.tryStart();
+  }
+
+  // Cancel a pending task by name
+  cancelTask(name) {
+    const index = this.queue.findIndex(t => t.name === name);
+    if (index !== -1) {
+      const [taskObj] = this.queue.splice(index, 1);
+      if (taskObj.timeoutId) clearTimeout(taskObj.timeoutId);
+      console.log(`Task ${name} canceled`);
+      return true;
+    }
+    return false;
+  }
+
+  // Attempt to start tasks while respecting concurrency limit
+  tryStart() {
+    while (this.running < this.limit && this.queue.length > 0) {
+      const taskObj = this.queue.shift();
+      if (taskObj.timeoutId) clearTimeout(taskObj.timeoutId);
+      this.runTask(taskObj);
+    }
+  }
+
+  // Run a single task
+  runTask(taskObj) {
+    this.running++;
+    console.log(`running ${taskObj.name}`);
+
+    Promise.resolve()
+      .then(taskObj.fn)
+      .then(() => {
+        this.lastExecuted = taskObj.name;
+      })
+      .finally(() => {
+        this.running--;
+        this.tryStart(); // pick next task if available
+      });
+  }
+
+  // Get the last executed task
+  getLastExecutedTask() {
+    return this.lastExecuted;
+  }
+
+  // Wait until all tasks are finished (returns a Promise)
+  onAllDone() {
+    return new Promise(resolve => {
+      const check = () => {
+        if (this.running === 0 && this.queue.length === 0) resolve();
+        else setTimeout(check, 50);
+      };
+      check();
+    });
+  }
+}
+
+// ------------------ Test Example ------------------
+
+const runner = new TaskRunner(2, 2); // concurrency 2, timeout 2 sec
+
+const createTask = (name, delay) => {
+  const fn = () =>
+    new Promise(res => {
+      setTimeout(() => {
+        console.log("done", name);
+        res();
+      }, delay);
+    });
+  fn.name = name;
+  return fn;
+};
+
+// Add tasks
+runner.addTask(createTask("A", 1000), "A");
+runner.addTask(createTask("B", 500), "B");
+runner.addTask(createTask("C", 300), "C");
+runner.addTask(createTask("D", 400), "D");
+runner.addTask(createTask("E", 200), "E");
+
+// Cancel task C before it starts
+setTimeout(() => {
+  runner.cancelTask("C");
+}, 100);
+
+// Wait until all tasks finish and then log last executed
+runner.onAllDone().then(() => {
+  console.log("All tasks finished");
+  console.log("Last executed task:", runner.getLastExecutedTask());
+});
