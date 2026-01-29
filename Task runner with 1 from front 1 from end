@@ -1,0 +1,75 @@
+class TaskRunner {
+  constructor(limit = 2) {
+    if (limit !== 2) throw new Error("This logic only works for limit=2");
+    this.queue = [];
+    this.frontRunning = false;
+    this.backRunning = false;
+    this.lastExecuted = null;
+  }
+
+  addTask(task) {
+    this.queue.push(task);
+    this.tryStart();
+  }
+
+  tryStart() {
+    // Start front task if slot free
+    if (!this.frontRunning && this.queue.length > 0) {
+      const task = this.queue.shift();
+      this.runTask(task, "front");
+    }
+
+    // Start back task if slot free
+    if (!this.backRunning && this.queue.length > 0) {
+      const task = this.queue.pop();
+      this.runTask(task, "back");
+    }
+  }
+
+  runTask(task, side) {
+    if (side === "front") this.frontRunning = true;
+    else this.backRunning = true;
+
+    console.log(`running ${task.name} from ${side}`);
+
+    Promise.resolve()
+      .then(task)
+      .then(() => {
+        this.lastExecuted = task.name;
+      })
+      .finally(() => {
+        if (side === "front") this.frontRunning = false;
+        else this.backRunning = false;
+
+        this.tryStart(); // start next task from same side
+      });
+  }
+
+  getLastExecutedTask() {
+    return this.lastExecuted;
+  }
+}
+const runner = new TaskRunner(2);
+
+const createTask = (name, delay) => {
+  const fn = () =>
+    new Promise(res => {
+      setTimeout(() => {
+        console.log("done", name);
+        res();
+      }, delay);
+    });
+  fn.name = name;
+  return fn;
+};
+
+// Add initial tasks
+runner.addTask(createTask("A", 1000)); // front
+runner.addTask(createTask("B", 500));  // back
+runner.addTask(createTask("C", 300));  // front
+runner.addTask(createTask("D", 400));  // back
+runner.addTask(createTask("E", 200));  // front/back depending on queue
+
+
+
+
