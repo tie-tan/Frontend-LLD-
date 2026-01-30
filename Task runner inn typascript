@@ -1,0 +1,145 @@
+type TaskFn<T> = () => Promise<T>
+
+type Executor = <T>(task: TaskFn<T>, taskId: string) => Promise<T>
+
+interface Task<T> {
+  id: string
+  fn: TaskFn<T>
+  onSuccess?: (result: T) => void
+  onError?: (error: any) => void
+}
+
+class TaskQueue {
+  private concurrency: number
+  private running = 0
+  private queue: Task<any>[] = []
+  private executor: Executor
+
+  constructor(concurrency: number, executor?: Executor) {
+    this.concurrency = concurrency
+    this.executor = executor ?? this.defaultExecutor
+  }
+
+  /**
+   * Add a task to the queue
+   */
+  addTask<T>(
+    id: string,
+    fn: TaskFn<T>,
+    onSuccess?: (result: T) => void,
+    onError?: (error: any) => void
+  ) {
+    const task: Task<T> = { id, fn, onSuccess, onError }
+    this.queue.push(task)
+    this.tryRunNext()
+  }
+
+  /**
+   * Try to run tasks while slots are available
+   */
+  private tryRunNext() {
+    while (this.running < this.concurrency && this.queue.length > 0) {
+      const task = this.queue.shift()!
+      this.runTask(task)
+    }
+  }
+
+  /**
+   * Run a single task using the executor
+   */
+  private async runTask<T>(task: Task<T>) {
+    this.running++
+
+    try {
+      const result = await this.executor(task.fn, task.id)
+      task.onSuccess?.(result)
+    } catch (err) {
+      task.onError?.(err)
+    } finally {
+      this.running--
+      this.tryRunNext()
+    }
+  }
+
+  /**
+   * Default executor (just executes the task)
+   */
+  private async defaultExecutor<T>(
+    task: TaskFn<T>,
+    taskId: string
+  ): Promise<T> {
+    return task()
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* ------------------------ Example Usage ----------------------------- */
+/* ------------------------------------------------------------------ */
+
+// Custom executor with logging + retry
+const customExecutor: Executor = async (task, taskId) => {
+  const MAX_RETRIES = 2
+  let attempt = 0
+
+  while (true) {
+    try {
+      console.log(`[Executor] Running task ${taskId}, attempt ${attempt + 1}`)
+      const result = await task()
+      console.log(`[Executor] Task ${taskId} completed`)
+      return result
+    } catch (err) {
+      attempt++
+      console.log(`[Executor] Task ${taskId} failed`)
+
+      if (attempt > MAX_RETRIES) {
+        throw err
+      }
+    }
+  }
+}
+
+// Create queue with concurrency = 2
+const queue = new TaskQueue(2, customExecutor)
+
+// Helper to create async tasks
+const createTask = (name: string, time: number, shouldFail = false) => {
+  return () =>
+    new Promise<string>((resolve, reject) => {
+      setTimeout(() => {
+        if (shouldFail) {
+          reject(`❌ ${name} failed`)
+        } else {
+          resolve(`✅ ${name} done`)
+        }
+      }, time)
+    })
+}
+
+// Add tasks
+queue.addTask(
+  "task-1",
+  createTask("Task 1", 2000),
+  res => console.log("Success:", res),
+  err => console.log("Error:", err)
+)
+
+queue.addTask(
+  "task-2",
+  createTask("Task 2", 1000, true),
+  res => console.log("Success:", res),
+  err => console.log("Error:", err)
+)
+
+queue.addTask(
+  "task-3",
+  createTask("Task 3", 1500),
+  res => console.log("Success:", res),
+  err => console.log("Error:", err)
+)
+
+queue.addTask(
+  "task-4",
+  createTask("Task 4", 500),
+  res => console.log("Success:", res),
+  err => console.log("Error:", err)
+)
