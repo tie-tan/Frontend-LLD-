@@ -1,0 +1,153 @@
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  Button,
+  Pressable,
+  FlatList,
+} from 'react-native';
+import { useState } from 'react';
+
+export default function App() {
+  const [task, setTask] = useState('');
+  const [author, setAuthor] = useState('');
+  const [list, setList] = useState([]);
+
+  const handleAdd = () => {
+    if (!task.trim() || !author.trim()) return;
+
+    setList(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        task,
+        author,
+        completed: false,
+      },
+    ]);
+
+    setTask('');
+    setAuthor('');
+  };
+
+  const toggleComplete = (id) => {
+    setList(prev =>
+      prev.map(item =>
+        item.id === id
+          ? { ...item, completed: !item.completed }
+          : item
+      )
+    );
+  };
+
+  const handleDelete = (id) => {
+    setList(prev => prev.filter(item => item.id !== id));
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.todoItem}>
+      <Pressable
+        style={[
+          styles.checkbox,
+          item.completed && styles.checkboxChecked,
+        ]}
+        onPress={() => toggleComplete(item.id)}
+      />
+
+      <View style={{ flex: 1 }}>
+        <Text
+          style={[
+            styles.taskText,
+            item.completed && styles.completedText,
+          ]}
+        >
+          {item.task}
+        </Text>
+        <Text style={styles.authorText}>— {item.author}</Text>
+      </View>
+
+      <Button title="Delete" onPress={() => handleDelete(item.id)} />
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Todo List</Text>
+
+      <TextInput
+        placeholder="Enter task"
+        value={task}
+        onChangeText={setTask}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Author name"
+        value={author}
+        onChangeText={setAuthor}
+        style={styles.input}
+      />
+
+      <Button title="Add Todo" onPress={handleAdd} />
+
+      <FlatList
+        data={list}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        style={{ marginTop: 20 }}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#ecf0f1',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+  },
+  todoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: 'green',
+  },
+  taskText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  authorText: {
+    fontSize: 14,
+    color: 'gray',
+  },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: 'gray',
+  },
+});
