@@ -1,0 +1,103 @@
+import React, { useState } from "react";
+
+export default function App() {
+  const data = {
+    question: "Which is your favorite frontend framework?",
+    options: [
+      { id: 1, text: "React", votes: 40, color: "#61DBFB" },
+      { id: 2, text: "Angular", votes: 25, color: "#DD0031" },
+      { id: 3, text: "Vue", votes: 20, color: "#42b883" },
+      { id: 4, text: "Svelte", votes: 15, color: "#ff3e00" }
+    ]
+  };
+
+  return <VotingMCQ data={data} />;
+}
+
+function VotingMCQ({ data }) {
+  const [selected, setSelected] = useState(null);
+  const [options, setOptions] = useState(data.options);
+
+  const totalVotes = options.reduce((sum, o) => sum + o.votes, 0);
+  const labels = ["A", "B", "C", "D"];
+
+  const handleClick = (id) => {
+    let updated = [...options];
+
+    if (selected !== null) {
+      updated = updated.map((o) =>
+        o.id === selected ? { ...o, votes: o.votes - 1 } : o
+      );
+    }
+
+    updated = updated.map((o) =>
+      o.id === id ? { ...o, votes: o.votes + 1 } : o
+    );
+
+    setOptions(updated);
+    setSelected(id);
+  };
+
+  return (
+    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
+      <h3>{data.question}</h3>
+
+      <div style={{ display: "flex", gap: 15, marginTop: 20 }}>
+        {options.map((o, i) => {
+          const percent = ((o.votes / totalVotes) * 100).toFixed(0);
+
+          return (
+            <div key={o.id} style={{ flex: 1, textAlign: "center" }}>
+              
+              {/* Column */}
+              <div
+                onClick={() => handleClick(o.id)}
+                style={{
+                  height: 200,
+                  border: "1px solid #ccc",
+                  borderRadius: 10,
+                  position: "relative",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "center"
+                }}
+              >
+                {/* Fill */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    width: "100%",
+                    height: selected ? percent + "%" : "0%",
+                    background: o.color,
+                    transition: "height 0.6s ease"
+                  }}
+                />
+
+                {/* Text */}
+                <div
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    padding: 10
+                  }}
+                >
+                  <div>{o.text}</div>
+                  {selected !== null && <div>{percent}%</div>}
+                </div>
+              </div>
+
+              <div style={{ marginTop: 8, fontWeight: "bold" }}>
+                Option {labels[i]}
+              </div>
+
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
