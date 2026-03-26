@@ -1,26 +1,32 @@
 // TaskQueue.ts
 
+type Task = () => Promise<unknown>
+
 class TaskQueue {
-  private queue: (() => Promise<any>)[] = []
+  private queue: Task[] = []
   private running = 0
 
   constructor(private concurrency: number) {}
 
-  add(task: () => Promise<any>) {
+  add(task: Task): void {
     this.queue.push(task)
     this.run()
   }
 
-  private run() {
+  private run(): void {
     if (this.running >= this.concurrency || this.queue.length === 0) return
 
     const task = this.queue.shift()!
     this.running++
 
     task()
-      .then(res => console.log("✅", res))
-      .catch(err => console.log("❌", err))
-      .finally(() => {
+      .then((res) => {
+        console.log("✅", res)
+      })
+      .catch((err) => {
+        console.log("❌", err)
+      })
+      .then(() => {
         this.running--
         this.run()
       })
@@ -34,11 +40,16 @@ class TaskQueue {
 
 const queue = new TaskQueue(2)
 
-const createTask = (name: string, time: number, fail = false) => {
+const createTask = (
+  name: string,
+  time: number,
+  fail = false
+): Task => {
   return () =>
-    new Promise((resolve, reject) => {
+    new Promise<string>((resolve, reject) => {
       setTimeout(() => {
-        fail ? reject(name + " failed") : resolve(name + " done")
+        if (fail) reject(`${name} failed`)
+        else resolve(`${name} done`)
       }, time)
     })
 }
