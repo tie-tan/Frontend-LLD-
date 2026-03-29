@@ -5,8 +5,14 @@ type Task = () => Promise<unknown>
 class TaskQueue {
   private queue: Task[] = []
   private running = 0
+  private maxConcurrent: number
 
-  constructor(private concurrency: number) {}
+  constructor(maxConcurrent: number) {
+    if (maxConcurrent <= 0) {
+      throw new Error("maxConcurrent must be > 0")
+    }
+    this.maxConcurrent = maxConcurrent
+  }
 
   add(task: Task): void {
     this.queue.push(task)
@@ -14,9 +20,13 @@ class TaskQueue {
   }
 
   private run(): void {
-    if (this.running >= this.concurrency || this.queue.length === 0) return
+    while (this.running < this.maxConcurrent && this.queue.length > 0) {
+      const task = this.queue.shift()!
+      this.executeTask(task)
+    }
+  }
 
-    const task = this.queue.shift()!
+  private executeTask(task: Task): void {
     this.running++
 
     task()
@@ -26,13 +36,10 @@ class TaskQueue {
       .catch((err) => {
         console.log("❌", err)
       })
-      .then(() => {
+      .finally(() => {
         this.running--
         this.run()
       })
-
-    // fill remaining slots
-    this.run()
   }
 }
 
