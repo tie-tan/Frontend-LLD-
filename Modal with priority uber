@@ -28,17 +28,17 @@ export default function App() {
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
       <h2>Simple Modal System</h2>
 
-      {/* Buttons to test */}
+      {/* Buttons */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-        <TestBtn label="P1-A" onClick={() => openModal("P1-A", 1)} />
-        <TestBtn label="P1-B" onClick={() => openModal("P1-B", 1)} />
-        <TestBtn label="P5-A" onClick={() => openModal("P5-A", 5)} />
-        <TestBtn label="P5-B" onClick={() => openModal("P5-B", 5)} />
-        <TestBtn label="P10" onClick={() => openModal("P10", 10)} />
-        <TestBtn label="P20" onClick={() => openModal("P20", 20)} />
+        <button onClick={() => openModal("P1-A", 1)}>P1-A</button>
+        <button onClick={() => openModal("P1-B", 1)}>P1-B</button>
+        <button onClick={() => openModal("P5-A", 5)}>P5-A</button>
+        <button onClick={() => openModal("P5-B", 5)}>P5-B</button>
+        <button onClick={() => openModal("P10", 10)}>P10</button>
+        <button onClick={() => openModal("P20", 20)}>P20</button>
       </div>
 
-      {/* Render Modals */}
+      {/* Modals */}
       {sorted.map((m, index) => (
         <div
           key={m.id}
@@ -52,7 +52,6 @@ export default function App() {
             background: "white",
             borderRadius: 8,
             minWidth: 200,
-            boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
             zIndex: 1000 + index
           }}
         >
@@ -61,48 +60,11 @@ export default function App() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <button style={btnStyle.secondary} onClick={() => closeModal(m.id)}>
-              Cancel
-            </button>
-            <button style={btnStyle.primary} onClick={() => closeModal(m.id)}>
-              Save
-            </button>
+            <button onClick={() => closeModal(m.id)}>Cancel</button>
+            <button onClick={() => closeModal(m.id)}>Save</button>
           </div>
         </div>
       ))}
     </div>
   );
 }
-
-const TestBtn = ({ label, onClick }) => (
-  <button
-    onClick={onClick}
-    style={{
-      padding: "8px 12px",
-      borderRadius: 6,
-      border: "1px solid #ccc",
-      background: "#f5f5f5",
-      cursor: "pointer"
-    }}
-  >
-    {label}
-  </button>
-);
-
-const btnStyle = {
-  primary: {
-    padding: "6px 12px",
-    borderRadius: 6,
-    border: "none",
-    background: "#2563eb",
-    color: "white",
-    cursor: "pointer"
-  },
-  secondary: {
-    padding: "6px 12px",
-    borderRadius: 6,
-    border: "1px solid #ccc",
-    background: "white",
-    cursor: "pointer"
-  }
-};
