@@ -1,0 +1,104 @@
+type Taskfn = () => Promise<any>
+
+interface Task {
+    id: string,
+    taskfn: Taskfn,
+    onSuccess?: (res: any) => void,
+    onFail?: (err: any) => void
+}
+
+type Executor = (fn: Taskfn, id: string) => Promise<any>
+
+class Taskrunner {
+   private limit: number
+   private running: number = 0
+   private executor: Executor
+   private queue: Task[] = []
+   
+   constructor(con: number, exe: Executor){
+       this.limit = con;
+       this.executor = exe
+   }
+   
+   addTask(task: Task){
+       this.queue.push(task);
+       this.tryrun();
+   }
+   
+   private tryrun(){
+       while(this.running<this.limit && this.queue.length > 0){
+           const task = this.queue.shift();
+           this.run(task);
+       }
+   }
+   
+   private run = async (task: Task) => {
+       this.running++;
+       try{
+           const res = await this.executor(task.taskfn, task.id);
+           task.onSuccess(res);
+       }
+       catch(err){
+           task.onFail(err);
+       } finally {
+           this.running--;
+           this.tryrun();
+       }
+   }
+   
+}
+
+const executor: Executor = async (fn: Taskfn, id: string) => {
+//   use for timeout in executor
+//   const timeout = 2000
+
+//   const withTimeout = (p: Promise<any>) =>
+//     Promise.race([
+//       p,
+//       new Promise((_, reject) =>
+//         setTimeout(() => reject(new Error("timeout")), timeout)
+//       ),
+//     ])
+
+    let retry = 2;
+    while(retry--){
+        try {
+            console.log("Retrtru hua", id)
+            const res = await fn(); // for timeout withTimeout(fn())
+            return res;
+        } catch (err) {
+            if(retry==0) throw err
+        }
+    }
+    throw Error("Error hua h")
+}
+
+const queue = new Taskrunner(2, executor)
+
+const createTask = (
+  id: string,
+  delay: number,
+  shouldFail = false
+): Task => ({
+  id,
+  taskfn: () =>
+    new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (shouldFail) {
+          reject(`Task ${id} failed ❌`)
+        } else {
+          console.log(`Task ${id} completed`)
+          resolve(delay)
+        }
+      }, delay)
+    }),
+  onSuccess: (res) => console.log(`Success ${id}:`, res),
+  onFail: (err) => console.log(`Error ${id}:`, err),
+})
+
+// Add tasks (with some failures)
+queue.addTask(createTask("A", 2000))          // success
+queue.addTask(createTask("B", 1000, true))   // ❌ fail
+queue.addTask(createTask("C", 3000))         // success
+queue.addTask(createTask("D", 500, true))    // ❌ fail
+
