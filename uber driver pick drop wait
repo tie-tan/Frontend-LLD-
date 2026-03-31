@@ -1,0 +1,73 @@
+class UberDriver {
+  constructor() {
+    this.queue = [];
+    this.running = false;
+
+    console.log("Hello uber driver is online");
+
+    // // start execution in next tick (so chaining completes first)
+    // setTimeout(() => this.run(), 0);
+  }
+
+  // add task to queue
+  addTask(fn) {
+    this.queue.push(fn);
+    this.run();
+    return this; // for chaining
+  }
+
+  async run() {
+    if (this.running) return;
+    this.running = true;
+
+    while (this.queue.length) {
+      const task = this.queue.shift();
+      await task();
+    }
+
+    this.running = false;
+  }
+
+  pick(name) {
+    return this.addTask(async () => {
+      console.log(`User ${name} is picked`);
+    });
+  }
+
+  drop(name) {
+    return this.addTask(async () => {
+      console.log(`Drop ${name}`);
+    });
+  }
+
+  drive(time) {
+    return this.addTask(() => {
+      return new Promise((resolve) => {
+        console.log("Driver is driving");
+        setTimeout(resolve, time * 1000);
+      });
+    });
+  }
+
+  rest(time) {
+    return this.addTask(() => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          console.log("Driver is in offline mode");
+          resolve();
+        }, time * 1000);
+      });
+    });
+  }
+}
+
+
+// usage
+new UberDriver()
+  .pick("TestUser")
+//   .pick("Rahul")
+  .drive(2)
+  .drop("Rahul")
+  .drive(4)
+  .drop("TestUser")
+  .rest(10);
