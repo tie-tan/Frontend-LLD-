@@ -1,4 +1,6 @@
 class UberDriver {
+    private queue = []
+    private running = false
   constructor() {
     this.queue = [];
     this.running = false;
@@ -54,7 +56,7 @@ class UberDriver {
       return new Promise((resolve) => {
         setTimeout(() => {
           console.log("Driver is in offline mode");
-          resolve();
+          resolve;
         }, time * 1000);
       });
     });
