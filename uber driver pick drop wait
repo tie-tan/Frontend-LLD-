@@ -1,3 +1,8 @@
+type Task = {
+ fn: () => Promise<void>;
+ priority: number | null;
+};
+
 class UberDriver {
     private queue = []
     private running = false
@@ -78,7 +83,7 @@ new UberDriver()
 if asked for priroty modify add and pick also check run it will have task.fn() in run
 addTask(task,pr=null) {
       let ta = {fn:task,pr}
-      if(pr!=null){
+      if(pr===null){
         this.queue.push(ta);
           
       }else{
