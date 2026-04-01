@@ -73,3 +73,29 @@ new UberDriver()
   .drive(4)
   .drop("TestUser")
   .rest(10);
+
+
+if asked for priroty modify add and pick also check run it will have task.fn() in run
+addTask(task,pr=null) {
+      let ta = {fn:task,pr}
+      if(pr!=null){
+        this.queue.push(ta);
+          
+      }else{
+          let i =0;
+          while(i<this.queue.length && this.queue[i].pr!=null && this.queue[i].pr>pr){
+              i++;
+          }
+          this.queue.splice(i,0,ta)
+      }
+    this.run();
+    return this; // for chaining
+  }
+
+
+  pick(name,pr) {
+    return this.addTask(async () => {
+      console.log(`User ${name} is picked`);
+    },pr);
+   
+  }
