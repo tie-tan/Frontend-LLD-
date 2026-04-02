@@ -1,0 +1,80 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+function App() {
+  const [circle] = useState([1,2,3,4]);
+  const [selected, setselected] = useState(new Set());
+  const [order, setOrder] = useState([]);
+  const isUndoing = useRef(false);
+
+  const handleclick = (i) => {
+    if (isUndoing.current) return;
+
+    setselected(prev => {
+      if (prev.has(i)) return prev;
+      const newSet = new Set(prev);
+      newSet.add(i);
+      return newSet;
+    });
+
+    setOrder(prev => [i, ...prev]);
+  };
+
+  const startUndo = (undoOrder) => {
+    isUndoing.current = true;
+
+    const process = (index) => {
+      if (index < 0) {
+        isUndoing.current = false;
+        setOrder([]);
+        return;
+      }
+
+      setTimeout(() => {
+        setselected(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(undoOrder[index]); 
+          return newSet;
+        });
+
+        process(index - 1); 
+      }, 500); 
+    };
+
+    process(undoOrder.length - 1); 
+  };
+
+  useEffect(() => {
+    if (
+      selected.size === circle.length &&
+      order.length > 0 &&
+      !isUndoing.current
+    ) {
+      startUndo([...order]); 
+    }
+  }, [selected, circle.length, order]);
+
+  return (
+    <div style={{ width: '100%', height: '100vh' }}>
+      {circle.map((_, i) => {
+        const fill = selected.has(i);
+
+        return (
+          <div
+            key={i}
+            style={{
+              width: 20,
+              height: 20,
+              border: "1px solid #ccc",
+              backgroundColor: fill ? 'green' : 'white',
+              padding: 10,
+              margin: 5
+            }}
+            onClick={() => handleclick(i)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export default App;
