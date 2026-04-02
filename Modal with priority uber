@@ -59,6 +59,14 @@ export default function App() {
             {m.title} (P{m.priority})
           </div>
 
+          // X icon at top right corner
+           <div style={{
+                position: "absolute",  
+                top: 8,
+                right: 8,
+                cursor: "pointer"
+              }} onClick={() => closeModal(m.id)}>{"X"}</div>
+
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <button onClick={() => closeModal(m.id)}>Cancel</button>
             <button onClick={() => closeModal(m.id)}>Save</button>
