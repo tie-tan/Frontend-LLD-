@@ -1,0 +1,104 @@
+import React, { useState, useEffect, useRef } from "react";
+
+const MAX_CONCURRENT = 3;
+
+function ProgressBar({ empty, onDone, isPaused }) {
+  const [progress, setProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const requestRef = useRef();
+  const startTimeRef = useRef();
+  const pausedTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (empty || isComplete) return;
+
+    const animate = (time) => {
+      if (!startTimeRef.current) {
+        startTimeRef.current = time - pausedTimeRef.current;
+      }
+
+      if (!isPaused) {
+        const elapsed = time - startTimeRef.current;
+        const currentProgress = Math.min((elapsed / 3000) * 100, 100);
+        
+        setProgress(currentProgress);
+        pausedTimeRef.current = elapsed;
+
+        if (currentProgress < 100) {
+          requestRef.current = requestAnimationFrame(animate);
+        } else {
+          setIsComplete(true);
+          onDone();
+        }
+      }
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(requestRef.current);
+      if (isPaused) startTimeRef.current = null;
+    };
+  }, [empty, isPaused, isComplete, onDone]);
+
+  return (
+    <div style={{ marginBottom: "10px" }}>
+      <div
+        style={{
+          width: "100%",
+          height: "20px",
+          background: "#eee",
+          borderRadius: "10px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${progress}%`,
+            height: "100%",
+            background: "green",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [bars, setBars] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [isGlobalPaused, setIsGlobalPaused] = useState(false);
+
+  const addBar = () => {
+    setBars((prev) => prev+1);
+  };
+
+  const handleReset = () => {
+    setBars(0);
+    setCompletedCount(0);
+    setIsGlobalPaused(false);
+  };
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <div style={{ display: "flex", gap: "10px" }}>
+        <button onClick={addBar}>Add Progress Bar</button>
+        <button onClick={() => setIsGlobalPaused(!isGlobalPaused)}>
+          {isGlobalPaused ? "Start" : "Pause"}
+        </button>
+        <button onClick={handleReset}>Reset</button>
+      </div>
+
+      <div style={{ marginTop: "20px" }}>
+        {Array(bars).fill(null).map((_, ind) => (
+          <ProgressBar
+            key={ind}
+            empty={completedCount + MAX_CONCURRENT <= ind}
+            isPaused={isGlobalPaused}
+            onDone={() => setCompletedCount((prev) => prev + 1)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
