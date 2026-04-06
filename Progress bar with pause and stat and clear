@@ -1,46 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const MAX_CONCURRENT = 3;
 
-function ProgressBar({ empty, onDone, isPaused }) {
-  const [progress, setProgress] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-  const requestRef = useRef();
-  const startTimeRef = useRef();
-  const pausedTimeRef = useRef(0);
-
-  useEffect(() => {
-    if (empty || isComplete) return;
-
-    const animate = (time) => {
-      if (!startTimeRef.current) {
-        startTimeRef.current = time - pausedTimeRef.current;
-      }
-
-      if (!isPaused) {
-        const elapsed = time - startTimeRef.current;
-        const currentProgress = Math.min((elapsed / 3000) * 100, 100);
-        
-        setProgress(currentProgress);
-        pausedTimeRef.current = elapsed;
-
-        if (currentProgress < 100) {
-          requestRef.current = requestAnimationFrame(animate);
-        } else {
-          setIsComplete(true);
-          onDone();
-        }
-      }
-    };
-
-    requestRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(requestRef.current);
-      if (isPaused) startTimeRef.current = null;
-    };
-  }, [empty, isPaused, isComplete, onDone]);
-
+function ProgressBar({ progress }) {
   return (
     <div style={{ marginBottom: "10px" }}>
       <div
@@ -65,38 +27,72 @@ function ProgressBar({ empty, onDone, isPaused }) {
 }
 
 export default function App() {
-  const [bars, setBars] = useState(0);
-  const [completedCount, setCompletedCount] = useState(0);
-  const [isGlobalPaused, setIsGlobalPaused] = useState(false);
+  const [bars, setBars] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef(null);
+
+  const handleStartStop = () => {
+    if (timerRef.current) {
+      // ⏸️ Stop
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      setIsRunning(false);
+    } else {
+      // ▶️ Start
+      timerRef.current = setInterval(() => {
+        setBars((prev) => {
+          const next = [...prev];
+
+          let count = 0;
+
+          // update only first 3 incomplete bars
+          for (let i = 0; i < next.length; i++) {
+            if (next[i] < 100 && count < MAX_CONCURRENT) {
+              next[i] += 1;
+              count++;
+            }
+          }
+
+          // avoid unnecessary re-render
+          if (count === 0) return prev;
+
+          return next;
+        });
+      }, 30);
+
+      setIsRunning(true);
+    }
+  };
+   useEffect(()=>{
+      return ()=> clearInterval(timerRef.current);
+  },[])
 
   const addBar = () => {
-    setBars((prev) => prev+1);
+    setBars((prev) => [...prev, 0]);
   };
 
   const handleReset = () => {
-    setBars(0);
-    setCompletedCount(0);
-    setIsGlobalPaused(false);
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+    setIsRunning(false);
+    setBars([]);
   };
 
   return (
     <div style={{ padding: "20px" }}>
       <div style={{ display: "flex", gap: "10px" }}>
         <button onClick={addBar}>Add Progress Bar</button>
-        <button onClick={() => setIsGlobalPaused(!isGlobalPaused)}>
-          {isGlobalPaused ? "Start" : "Pause"}
+
+        <button onClick={handleStartStop}>
+          {isRunning ? "Pause" : "Start"}
         </button>
+
         <button onClick={handleReset}>Reset</button>
       </div>
 
       <div style={{ marginTop: "20px" }}>
-        {Array(bars).fill(null).map((_, ind) => (
-          <ProgressBar
-            key={ind}
-            empty={completedCount + MAX_CONCURRENT <= ind}
-            isPaused={isGlobalPaused}
-            onDone={() => setCompletedCount((prev) => prev + 1)}
-          />
+        {bars.map((progress, ind) => (
+          <ProgressBar key={ind} progress={progress} />
         ))}
       </div>
     </div>
