@@ -1,106 +1,109 @@
-/***********************
- * MessageQueue (Broker)
- ***********************/
-class MessageQueue {
-  constructor() {
-    this.queue = [];
-    this.consumers = new Map(); // id -> consumerFn
-    this.nextId = 1;
-  }
 
-  // Producer pushes message
-  produce(message) {
-    console.log(`\n[Producer] Produced: ${message}`);
+type Consumer<T> = (msg: T) => Promise<void> | void;
+
+class ProducerConsumer<T> {
+  private queue: T[] = []; // stores messages
+  private consumers: Map<number, Consumer<T>> = new Map(); // id -> consumer
+  private isProcessing: boolean = false; // prevents multiple loops
+  private idCounter: number = 0; // unique id for consumers
+
+  publish(message: T): void {
+    console.log("\n📦 Produced:", message);
+
+    // add message to queue
     this.queue.push(message);
-    this.notify();
+
+    // start processing
+    this.process();
   }
 
-  // Consumer subscribes
-  subscribe(consumerFn) {
-    const id = this.nextId++;
-    this.consumers.set(id, consumerFn);
+  subscribe(fn: Consumer<T>): { id: number; unsubscribe: () => void } {
+    const id = ++this.idCounter;
 
-    console.log(`[System] Consumer ${id} subscribed`);
+    // store consumer
+    this.consumers.set(id, fn);
 
-    // return unsubscribe function
-    return () => {
-      this.consumers.delete(id);
-      console.log(`[System] Consumer ${id} unsubscribed`);
+    console.log(`✅ Consumer ${id} subscribed`);
+
+    // return both id and unsubscribe function
+    return {
+      id,
+      unsubscribe: () => this.unsubscribe(id),
     };
   }
 
-  // Notify all consumers
-  notify() {
-    while (this.queue.length > 0) {
-      const msg = this.queue.shift();
-
-      this.consumers.forEach((consumerFn, id) => {
-        consumerFn(msg);
-      });
+  unsubscribe(id: number): void {
+    if (this.consumers.has(id)) {
+      this.consumers.delete(id);
+      console.log(`❌ Consumer ${id} unsubscribed`);
     }
   }
-}
 
-/***********************
- * Producer
- ***********************/
-class Producer {
-  constructor(queue) {
-    this.queue = queue;
-  }
+  private async process(): Promise<void> {
+    // prevent multiple parallel loops
+    if (this.isProcessing) return;
 
-  submit(message) {
-    this.queue.produce(message);
-  }
-}
+    this.isProcessing = true;
 
-/***********************
- * Consumer
- ***********************/
-class Consumer {
-  constructor(name, queue) {
-    this.name = name;
+    // process messages one by one
+    while (this.queue.length > 0) {
+      const msg = this.queue.shift()!;
 
-    // subscribe and store unsubscribe reference
-    this.unsubscribe = queue.subscribe(this.consume.bind(this));
-  }
+      console.log("🚚 Processing message:", msg);
 
-  consume(message) {
-    console.log(`[${this.name}] received: ${message}`);
-  }
+      // 🔥 SNAPSHOT (VERY IMPORTANT)
+      // We copy consumers so changes during iteration don't break loop
+      const consumersSnapshot = Array.from(this.consumers.entries());
 
-  stop() {
-    this.unsubscribe();
+      for (let [id, consumer] of consumersSnapshot) {
+        console.log(`➡️ Sending to Consumer ${id}`);
+
+        // await ensures order + async safety
+        await consumer(msg);
+      }
+    }
+
+    this.isProcessing = false;
   }
 }
 
-/***********************
- * Simulation
- ***********************/
-const queue = new MessageQueue();
-const producer = new Producer(queue);
+const pc = new ProducerConsumer<string>();
 
-// consumers join
-const c1 = new Consumer("Consumer-1", queue);
-const c2 = new Consumer("Consumer-2", queue);
+// Consumer 1
+const c1 = pc.subscribe(async (msg) => {
+  console.log("👤 Consumer 1 got:", msg);
+});
 
-// producer sends messages
-producer.submit("Hello World");
-producer.submit("Producer Consumer Pattern");
+// Consumer 2
+const c2 = pc.subscribe(async (msg) => {
+  console.log("👤 Consumer 2 got:", msg);
+});
 
-// unsubscribe consumer-1
-c1.stop();
 
-// only consumer-2 should receive this
-producer.submit("After unsubscribe");
+pc.publish("A");
+pc.publish("B");
 
-// new consumer joins later
-const c3 = new Consumer("Consumer-3", queue);
+setTimeout(() => {
+  c1.unsubscribe(); // remove consumer 1
+}, 500);
 
-producer.submit("New consumer joined");
+setTimeout(() => {
+  pc.publish("C");
+}, 1000);
 
-// unsubscribe all
-c2.stop();
-c3.stop();
+setTimeout(() => {
+  const c3 = pc.subscribe(async (msg) => {
+    console.log("👤 Consumer 3 got:", msg);
+  });
 
-producer.submit("No one should receive this");
+  pc.publish("D");
+
+  // unsubscribe using ID method
+  setTimeout(() => {
+    pc.unsubscribe(c3.id);
+  }, 500);
+}, 1500);
+
+setTimeout(() => {
+  pc.publish("E");
+}, 2500);
