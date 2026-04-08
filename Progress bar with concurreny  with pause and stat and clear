@@ -25,6 +25,8 @@ function ProgressBar({ progress }) {
   );
 }
 
+const concurrent = 3;
+
 export default function App() {
   const [bars, setbars] = useState([]); // convert to array
   const [progress, setprogress] = useState([]); // convert toa rray
@@ -46,7 +48,7 @@ export default function App() {
             // hasWork = true;
           }
 
-          if (count === 3) break;
+          if (count === concurrent) break;
         }
 
         // if (!hasWork) {
