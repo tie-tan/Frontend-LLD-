@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
 
+// V. IMP in this we can remove bars as the UI can be driven  by progress array only
+
 function ProgressBar({ progress }) {
   return (
     <div
