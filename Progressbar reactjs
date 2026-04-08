@@ -1,56 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
-function ProgressBar() {
-  const [start, setStart] = useState(false);
-
-  useEffect(() => {
-    if(start) return 
-    setStart(true);
-  }, []);
-
+function ProgressBar({ progress }) {
   return (
-    <div style={{ marginBottom: "10px" }}>
+    <div
+      style={{
+        height: 20,
+        width: 300,
+        border: "1px solid",
+        borderRadius: 20,
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          width: "100%",
-          height: "20px",
-          borderRadius: "10px",
-          overflow: "hidden",
+          height: "100%",
+          backgroundColor: "green",
+          width: `${progress}%`,
         }}
-      >
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "green",
-            transform: start ? "scaleX(1)" : "scaleX(0)",
-            transformOrigin: "left",
-            transitionProperty: "transform",
-            transitionDuration: "3000ms",
-            transitionTimingFunction: "linear",
-          }}
-        />
-      </div>
+      ></div>
     </div>
   );
 }
 
 export default function App() {
-  const [bars, setBars] = useState([]);
+  const [progress, setprogress] = useState(0);
+  const interval = useRef(null)
 
-  const addBar = () => {
-    setBars((prev) => [...prev, Date.now() + Math.random()]);
-  };
+  function start(){
+    if(progress>100 || interval.current) return
+
+    interval.current = setInterval(()=>{
+      setprogress(prev=>prev+1)
+    },10)
+  }
+
+  // when there is no start stop button use this to start on render
+  useEffect(()=>{
+    start()
+  }, [])
+
+  function stop(){
+      clearInterval(interval.current);
+      interval.current = null;
+  }
+
+  function reset(){
+      stop();
+      setprogress(0);
+  }
 
   return (
+ 
     <div style={{ padding: "20px" }}>
-      <button onClick={addBar}>Add</button>
-
-      <div style={{ marginTop: "20px" }}>
-        {bars.map((id) => (
-          <ProgressBar key={id} />
-        ))}
+      <div style={{flexDirection: 'row', margin: 20}}>
+        <button>{"ADD"}</button>
+        <button onClick={start}>{"Start"}</button>
+        <button onClick={stop}>{"Stop"}</button>
+        <button onClick={reset}>{"Reset"}</button>
       </div>
+      <ProgressBar progress={progress} />
     </div>
+
   );
 }
+
+
+
+// when asked to make it smoother
+// useEffect(() => {
+//     if(progress>100) return
+//     let frameId;
+
+//     function animate() {
+//      setprogress(prev=>prev+1)
+//      frameId = requestAnimationFrame(animate);
+//     }
+
+//     frameId = requestAnimationFrame(animate);
+
+//     return () => cancelAnimationFrame(frameId);
+//   }, []);
