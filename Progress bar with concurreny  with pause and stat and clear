@@ -1,0 +1,92 @@
+import React, { useState, useRef } from "react";
+
+function ProgressBar({ progress }) {
+  return (
+    <div
+      style={{
+        height: 20,
+        width: 300,
+        border: "1px solid",
+        borderRadius: 20,
+        overflow: "hidden",
+        margin: 10,
+      }}
+    >
+      <div
+        style={{
+          height: "100%",
+          backgroundColor: "green",
+          width: `${progress}%`,
+        }}
+      ></div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [bars, setbars] = useState([]); // convert to array
+  const [progress, setprogress] = useState([]); // convert toa rray
+  const interval = useRef(null);
+
+  function start() {
+    if (interval.current) return;
+
+    interval.current = setInterval(() => {
+      setprogress((prev) => {
+        let updated = [...prev];
+        let count = 0;
+        // let hasWork = false; // this is oprtion to clear interval
+
+        for (let i = 0; i < updated.length; i++) {
+          if (updated[i] < 100) {
+            updated[i]++;
+            count++;
+            // hasWork = true;
+          }
+
+          if (count === 3) break;
+        }
+
+        // if (!hasWork) {
+        //   clearInterval(interval.current);
+        //   interval.current = null;
+        // }
+
+        return updated;
+      });
+    }, 10);
+  }
+
+  function stop() {
+    clearInterval(interval.current);
+    interval.current = null;
+  }
+
+  function reset() {
+    stop();
+    setbars([]); // optional
+    setprogress([]);
+  }
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <div style={{ margin: 20 }}>
+        <button
+          onClick={() => {
+            setbars((prev) => [...prev, 0]);
+            setprogress((prev) => [...prev, 0]); // keep in sync
+          }}
+        >
+          ADD
+        </button>
+        <button onClick={start}>Start</button>
+        <button onClick={stop}>Stop</button>
+        <button onClick={reset}>Reset</button>
+      </div>
+
+      {bars.map((_, ind) => (
+        <ProgressBar key={ind} progress={progress[ind] || 0} />
+      ))}
+    </div>
+  );
+}
