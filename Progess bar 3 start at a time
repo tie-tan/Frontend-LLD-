@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-// V. IMP in this we can remove bars as the UI can be driven  by progress array only
-
 const MAX_CONCURRENT = 3;
 
 function ProgressBar({ empty, onDone }) {
