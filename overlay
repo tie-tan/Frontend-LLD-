@@ -1,0 +1,165 @@
+import React, { useState, useCallback, createContext, useContext } from "react";
+
+// Simple UUID generator
+const uuid = () => Math.random().toString(36).substring(2, 9);
+
+/* ================= CONTEXT ================= */
+
+const OverlayCtx = createContext();
+export const useOverlay = () => useContext(OverlayCtx);
+
+const OverlayProvider = ({ children }) => {
+  const [overlays, setOverlays] = useState([]);
+
+  // CREATE
+  const createOverlay = (options) => {
+    const id = uuid();
+
+    setOverlays((prev) => [...prev, { id, ...options }]);
+
+    return {
+      close: () => {
+        setOverlays((prev) => prev.filter((o) => o.id !== id));
+      },
+    };
+  };
+// for priroty rendering
+// overlays
+        .slice()
+     //   .sort((a, b) => b.priority - a.priority)
+      //  .map((overlay, index) => (
+  return (
+    <OverlayCtx.Provider value={{ createOverlay }}>
+      {overlays.map((overlay) => (
+        <Overlay
+          key={overlay.id}
+          config={overlay}
+          onClose={() =>
+            setOverlays((prev) =>
+              prev.filter((o) => o.id !== overlay.id)
+            )
+          }
+        />
+      ))}
+
+      {children}
+    </OverlayCtx.Provider>
+  );
+};
+
+/* ================= OVERLAY UI ================= */
+
+const Overlay = ({ config, onClose }) => {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: `rgba(0,0,0,${config.backgroundOpacity || 0.4})`,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 999,
+      }}
+      onClick={config.closeOnOutsideClick ? onClose : undefined}
+    >
+      <div
+        style={{
+          background: "white",
+          padding: "20px",
+          borderRadius: "8px",
+          minWidth: "300px",
+          position: "relative",
+        }}
+      >
+        {/* Close Button */}
+        {config.showClose && (
+          <div
+            onClick={onClose}
+            style={{
+              position: "absolute",
+              top: "10px",
+              right: "10px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            X
+          </div>
+        )}
+
+        {/* Content (Safe React Rendering) */}
+        <div>
+          {config.content()}
+        </div>
+
+        {/* CTA Buttons */}
+        <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+          {config.positiveCTA && (
+            <button
+              onClick={config.positiveCTA.onClick}
+              style={{ padding: "8px 12px", cursor: "pointer" }}
+            >
+              {config.positiveCTA.text}
+            </button>
+          )}
+
+          {config.negativeCTA && (
+            <button
+              onClick={config.negativeCTA.onClick}
+              style={{ padding: "8px 12px", cursor: "pointer" }}
+            >
+              {config.negativeCTA.text}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ================= APP EXAMPLE ================= */
+
+export default function App() {
+  return (
+    <OverlayProvider>
+      <Home />
+    </OverlayProvider>
+  );
+}
+
+const Home = () => {
+  const { createOverlay } = useOverlay();
+
+  const openModal = () => {
+    const overlay = createOverlay({
+      content: () => (
+        <div>
+          <h2>Hello Modal</h2>
+          <p>This is safe React content</p>
+        </div>
+      ),
+      showClose: true,
+      backgroundOpacity: 0.5,
+      positiveCTA: {
+        text: "OK",
+        onClick: () => alert("OK clicked"),
+      },
+      negativeCTA: {
+        text: "Cancel",
+        onClick: () => alert("Cancel clicked"),
+      },
+    });
+  };
+
+  return (
+    <div style={{ padding: "40px" }}>
+      <button onClick={openModal} style={{ padding: "10px 16px" }}>
+        Open Overlay
+      </button>
+    </div>
+  );
+};
