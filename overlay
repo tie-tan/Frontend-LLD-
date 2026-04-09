@@ -181,3 +181,22 @@ const Home = () => {
     </div>
   );
 };
+
+
+
+if asked async content
+ const openAsyncContent = () => {
+    createOverlay({
+      priority: 5,
+      content: new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(() => (
+            <div>
+              <h3>Async User Specific Content</h3>
+              <p>Fetched from API</p>
+            </div>
+          ));
+        }, 2000);
+      }),
+      showClose: true,
+    });
