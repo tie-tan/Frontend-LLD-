@@ -1,0 +1,135 @@
+import React, { useEffect, useRef, useState, useCallback } from "react";
+
+// Hardcoded image list
+const IMAGES = [
+  "https://picsum.photos/id/1015/600/400",
+  "https://picsum.photos/id/1016/600/500",
+  "https://picsum.photos/id/1020/600/450",
+  "https://picsum.photos/id/1024/600/600",
+  "https://picsum.photos/id/1035/600/350",
+  "https://picsum.photos/id/1041/600/550",
+  "https://picsum.photos/id/1050/600/420",
+  "https://picsum.photos/id/1062/600/480",
+  "https://picsum.photos/id/1074/600/530",
+];
+
+// Fake API (returns random images with delay)
+const fetchImages = () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const randomImages = Array.from({ length: 4 }, () => {
+        const idx = Math.floor(Math.random() * IMAGES.length);
+        return IMAGES[idx];
+      });
+      resolve(randomImages);
+    }, 1000);
+  });
+};
+
+// Debounce helper
+const debounce = (fn, delay) => {
+  let timer;
+  return (...args) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+};
+
+export default function App() {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
+
+  // Load more images
+  const loadMore = async () => {
+    if (loading) return;
+    setLoading(true);
+    const newImages = await fetchImages();
+    setImages((prev) => [...prev, ...newImages]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadMore();
+  }, []);
+
+  // Scroll handler
+  const handleScroll = useCallback(
+    debounce(() => {
+      const el = containerRef.current;
+      if (!el || loading) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = el;
+
+      if (scrollTop + clientHeight >= scrollHeight - 50) {
+        loadMore();
+      }
+    }, 200),
+    [loading]
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      style={{
+        height: "100vh",
+        overflowY: "auto",
+        padding: "10px",
+        boxSizing: "border-box",
+        background: "#f5f5f5",
+      }}
+    >
+      {images.map((src, index) => (
+        <div
+          key={index}
+          style={{
+            marginBottom: "12px",
+            borderRadius: "12px",
+            overflow: "hidden",
+            background: "#ddd",
+          }}
+        >
+          <img
+            src={src}
+            alt="img"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      ))}
+
+      {loading && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "20px",
+            fontSize: "16px",
+            color: "#555",
+          }}
+        >
+          Loading...
+        </div>
+      )}
+    </div>
+  );
+}
+
+// virtualisation  - only render data is shown not whole data.
+// How can you render images without breaking its actual aspect ratio (With the help of
+object-fit or aspect ratio css) --
+We can preserve aspect ratio by either using height: auto for natural scaling,
+or by fixing container dimensions and using object-fit: cover or contain.
+For more control and to avoid layout shifts, we can use the CSS aspect-ratio property along with object-fit.
+
+| Approach     | Keeps Ratio | Cropping | Layout Stable |
+| ------------ | ----------- | -------- | ------------- |
+| height: auto | ✅           | ❌        | ❌             |
+| object-fit   | ✅           | ✅        | ✅             |
+| aspect-ratio | ✅           | optional | ✅ (best)      |
+
+
