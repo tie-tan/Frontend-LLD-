@@ -14,8 +14,26 @@ const OverlayProvider = ({ children }) => {
   // CREATE
   const createOverlay = (options) => {
     const id = uuid();
+ setOverlays((prev) => [...prev, { id, ...options }]);
 
-    setOverlays((prev) => [...prev, { id, ...options }]);
+// if asked to convert o promsie use this
+
+const contentPromise = Promise.resolve(options.content);
+
+    contentPromise.then((content) => {
+      setOverlays((prev) => {
+        const newOverlay = {
+          id: overlayId,
+          priority: options.priority || 0, //priority
+          ...options,
+          content,
+        };
+
+        return [...prev, newOverlay];
+      });
+    });
+
+   
 
     return {
       close: () => {
