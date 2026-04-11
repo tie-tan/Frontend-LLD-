@@ -1,0 +1,62 @@
+import React, { useState, useEffect } from "react";
+
+const dummy = [
+  { ram: "abcd", shaym: "fsdjfbhk" },
+  { ram: "sdkjbf", shyam: "Dgfg" },
+  { ram: "sdgr" }
+];
+
+// FETCH API (GET)
+const fetchapi = () => {
+  return new Promise((res) => {
+    setTimeout(() => {
+      res(dummy);
+    }, 2000);
+  });
+};
+
+// SET API (POST)
+const setapi = (newValue) => {
+  return new Promise((res) => {
+    setTimeout(() => {
+      res({ status: 200, code: "success", data: newValue });
+    }, 1500);
+  });
+};
+
+function App() {
+  const [data, setdata] = useState([]);
+  const [status, setstatus] = useState("");
+
+  // FETCH DATA
+  useEffect(() => {
+    fetchapi().then((res) => {
+      const extracted = res.map((ele) => ele.ram);
+      setdata(extracted);
+    });
+  }, []);
+
+  // ADD DATA
+  const handleclick = async () => {
+    const response = await setapi("rohan");
+
+    if (response.status === 200) {
+      setdata((prev) => [...prev, response.data]);
+      setstatus(response.code);
+    }
+  };
+
+  return (
+    <div>
+      {data.map((ele, ind) => (
+        <div key={ind}>{ele}</div>
+      ))}
+
+      <button onClick={handleclick}>Add</button>
+
+      <div>{status}</div>
+    </div>
+  );
+}
+
+export default App;
