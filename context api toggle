@@ -1,0 +1,39 @@
+import { StyleSheet, Text, View, Button } from 'react-native';
+
+
+import { useContext, createContext, useState } from 'react'
+
+const Themecontext = createContext();
+
+const  Themeprovider = ({children}) => {
+  const [isdark,setdark] = useState(false);
+  const toggle = () => {
+    setdark(prev=>!prev);
+  }
+  return (
+    <Themecontext.Provider value = {{isdark, toggle}}>
+        {children}
+    </Themecontext.Provider>
+  )
+}
+
+const usetheme = () => useContext(Themecontext);
+
+const Home = () => {
+  const {isdark, toggle} = usetheme();
+  return (
+    <View style={{height: '100%', width: '100%', backgroundColor: isdark ? '#000000' : '#ffffff'}}>
+      <Button onPress={toggle} title={"TOGGLE"} />
+    </View>
+  )
+}
+
+export default function App() {
+  return (
+    <Themeprovider>
+      <Home />
+    </Themeprovider>
+  );
+}
+
+
