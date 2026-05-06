@@ -6,20 +6,21 @@ const App = () => {
   ]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
+  const [dragginele,setdraggingele] = useState(null); // ele dragging
 
   // Handle Dragging
-  const onDragStart = (e, id) => {
-    e.dataTransfer.setData('taskId', id);
+  const onDragStart = (t) => {
+    setdraggingele(t);
   };
 
   const onDragOver = (e) => {
     e.preventDefault();
   };
 
-  const onDrop = (e, newStatus) => {
-    const id = e.dataTransfer.getData('taskId');
+  const onDrop = (newStatus) => {
+    
     const updatedTasks = tasks.map(task => 
-      task.id === id ? { ...task, status: newStatus } : task
+      task.id === dragginele.id ? { ...task, status: newStatus } : task
     );
     setTasks(updatedTasks);
   };
@@ -43,14 +44,13 @@ const App = () => {
   const Column = ({ status, label, bgColor }) => (
     <div 
       onDragOver={onDragOver} 
-      onDrop={(e) => onDrop(e, status)}
+      onDrop={() => onDrop(status)}
       style={{
         flex: 1,
         backgroundColor: bgColor,
         borderRadius: '10px',
         padding: '15px',
         minHeight: '500px',
-        boxShadow: 'inset 0 0 5px rgba(0,0,0,0.05)'
       }}
     >
       <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>{label}</h3>
@@ -60,14 +60,13 @@ const App = () => {
           <div 
             key={t.id} 
             draggable 
-            onDragStart={(e) => onDragStart(e, t.id)}
+            onDragStart={() => onDragStart(t)}
             style={{
               backgroundColor: 'white',
               padding: '12px',
               borderRadius: '6px',
               marginBottom: '10px',
               cursor: 'grab',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}
           >
             <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>{t.title}</h4>
