@@ -1,0 +1,173 @@
+import React, { useState,useEffect,useRef } from "react";
+
+const images = [
+  "https://picsum.photos/id/1015/800/500",
+  "https://picsum.photos/id/1016/800/500",
+  "https://picsum.photos/id/1018/800/500",
+  "https://picsum.photos/id/1020/800/500",
+];
+
+export default function App() {
+  const [current, setCurrent] = useState(0);
+
+  // slide offset
+  // prev = -100
+  // current = 0
+  // next = 100
+  const [translate, setTranslate] = useState(0);
+
+  const [transition, setTransition] = useState(true);
+  const [animating, setAnimating] = useState(false);
+  const total = images.length;
+
+  // virtualization
+  const visibleImages = [
+    {
+      src: images[(current - 1 + total) % total],
+      position: -100,
+    },
+    {
+      src: images[current],
+      position: 0,
+    },
+    {
+      src: images[(current + 1) % total],
+      position: 100,
+    },
+  ];
+
+  const slide = (direction) => {
+    if (animating) return;
+
+    setAnimating(true);
+
+    // animate
+    setTranslate(direction === "next" ? -100 : 100);
+
+    setTimeout(() => {
+      // disable transition for reset
+      setTransition(false);
+
+      // update current index
+      setCurrent((prev) =>
+        direction === "next"
+          ? (prev + 1) % total
+          : (prev - 1 + total) % total
+      );
+
+      // reset back to center
+      setTranslate(0);
+
+      setTimeout(() => {
+        setTransition(true);
+        setAnimating(false);
+      }, 0);
+    }, 300);
+  };
+
+    /// need only for auto play 
+   const interval = useRef(null);
+    const startAutoPlay = () => {
+      clearInterval(interval.current);
+      interval.current = setInterval(() => {
+        slide("next");
+      }, 1500);
+    };
+    const stopAutoPlay = () => {
+      clearInterval(interval.current);
+    };
+    useEffect(() => {
+      startAutoPlay();
+      return stopAutoPlay;
+    }, []);
+
+  return (
+    <div>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "600px",
+          padding: "10px",
+        }}
+      >
+        {/* Carousel */}
+        <div
+           onMouseEnter = {stopAutoPlay} // for atoplay
+          onMouseLeave = {startAutoPlay} // for autoplay
+          style={{
+            position: "relative",
+            width: "100%",
+            aspectRatio: "3 / 2",
+            maxHeight: "400px",
+            overflow: "hidden",
+            background: "black",
+          }}
+        >
+          {visibleImages.map((img, i) => (
+            <img
+              key={img.src}
+              src={img.src}
+              alt=""
+              style={{
+                position: "absolute",
+                objectFit: "contain",
+
+                transform: `translateX(${img.position + translate}%)`,
+                transition: transition
+                  ? "transform 300ms ease"
+                  : "none",
+              }}
+            />
+          ))}
+
+          {/* Prev */}
+          <button
+            onClick={() => slide("prev")}
+            style={{
+              position: "absolute",
+              left: "10px",
+              top: "50%",
+            }}
+          >
+            ◀
+          </button>
+
+          {/* Next */}
+          <button
+            onClick={() => slide("next")}
+            style={{
+              position: "absolute",
+              right: "10px",
+              top: "50%",
+            }}
+          >
+            ▶
+          </button>
+        </div>
+
+        {/* Dots */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "10px",
+            marginTop: "16px",
+          }}
+        >
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              style={{
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                background: i === current ? "black" : "#9ca3af",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
