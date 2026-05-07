@@ -1,0 +1,70 @@
+import React, { useState } from "react";
+
+const LIST = Array.from({ length: 100000 }, (_, index) => index + 1);
+
+export default function App() {
+  const height = 500;
+  const width = 400;
+  const itemHeight = 30;
+
+  // visible start and end indices
+  const [indices, setIndices] = useState([0,Math.floor(height / itemHeight)]);
+
+  const handleScroll = (e) => {
+    const scrollTop = e.target.scrollTop;
+
+    const startIndex = Math.floor(scrollTop / itemHeight);
+    const endIndex =startIndex + Math.floor(height / itemHeight);
+
+    setIndices([startIndex, endIndex]);
+  };
+
+  // only render visible items
+  const visibleList = LIST.slice(indices[0], indices[1] + 1);
+
+  return (
+    <div
+      onScroll={handleScroll}
+      style={{
+        height: height,
+        width: width,
+        overflow: "auto",
+        background: "grey",
+      }}
+    >
+      {/* total scrollable height */}
+      <div
+        style={{
+          height: LIST.length * itemHeight,
+          position: "relative",
+        }}
+      >
+        {visibleList.map((item, index) => {
+          const actualIndex = indices[0] + index;
+
+          return (
+            <div
+              key={item}
+              style={{
+                position: "absolute",
+                top: actualIndex * itemHeight,
+                  /* what does this top do?
+                  Push item to correct vertical position
+
+                  Example:
+                  item 50
+
+                  top = 50 * 30 = 1500px
+                */
+                height: itemHeight,
+                width: "100%",
+              }}
+            >
+              Item {item}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
