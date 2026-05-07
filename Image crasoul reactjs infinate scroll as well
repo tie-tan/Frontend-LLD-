@@ -16,7 +16,6 @@ export default function App() {
   // next = 100
   const [translate, setTranslate] = useState(0);
 
-  const [transition, setTransition] = useState(true);
   const [animating, setAnimating] = useState(false);
   const total = images.length;
 
@@ -41,28 +40,27 @@ export default function App() {
 
     setAnimating(true);
 
-    // animate
+    // animate ye animatre krenga
     setTranslate(direction === "next" ? -100 : 100);
 
-    setTimeout(() => {
-      // disable transition for reset
-      setTransition(false);
-
-      // update current index
-      setCurrent((prev) =>
-        direction === "next"
-          ? (prev + 1) % total
-          : (prev - 1 + total) % total
-      );
-
-      // reset back to center
-      setTranslate(0);
-
-      setTimeout(() => {
-        setTransition(true);
-        setAnimating(false);
-      }, 0);
-    }, 300);
+      // aniamtion finish hone k baad ye make sure krega ki current index set ho and offset 0 ho
+      // ye timeout ni krnge to vo aniamte ho kr wapas same index pr aa jaayega .
+        setTimeout(() => {
+          // update current index
+          setCurrent((prev) =>
+            direction === "next"
+              ? (prev + 1) % total
+              : (prev - 1 + total) % total
+          );
+    
+          // reset back to center // otherwiser 2 2 move kr skta h -INFINTY  m jaa skta h
+          setTranslate(0);
+    
+          setTimeout(() => {
+            setAnimating(false);
+          }, 0);
+        }, 300);
+      
   };
 
     /// need only for auto play 
@@ -113,9 +111,7 @@ export default function App() {
                 objectFit: "contain",
 
                 transform: `translateX(${img.position + translate}%)`,
-                transition: transition
-                  ? "transform 300ms ease"
-                  : "none",
+                transition: "transform 300ms ease"
               }}
             />
           ))}
