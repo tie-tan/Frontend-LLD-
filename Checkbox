@@ -1,114 +1,136 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, InputBox, TextInput } from "react-native";
 
+// --- Types ---
+type CheckboxItem = {
+  id: number;
+  name: string;
+  checked: boolean | "indeterminate";
+  children?: CheckboxItem[];
+};
 
-
+// --- Main App Component ---
 export default function App() {
-   const [data, setData] = useState([
+  const checkboxesData: CheckboxItem[] = [
     {
       id: 1,
-      label: "Parent",
+      name: "Electronics",
       checked: false,
       children: [
-        { id: 11, label: "Child 1", checked: true },
-        { id: 12, label: "Child 2", checked: false },
+        {
+          id: 2,
+          name: "Mobile phones",
+          checked: false,
+          children: [
+            { id: 3, name: "iPhone", checked: false },
+            { id: 4, name: "Android", checked: false },
+          ],
+        },
+        {
+          id: 5,
+          name: "Laptops",
+          checked: false,
+          children: [
+            { id: 6, name: "MacBook", checked: false },
+            { id: 7, name: "Surface Pro", checked: false },
+          ],
+        },
       ],
     },
-  ]);
+    {
+      id: 8,
+      name: "Books",
+      checked: false,
+      children: [
+        { id: 9, name: "Fiction", checked: false },
+        { id: 10, name: "Non-fiction", checked: false },
+      ],
+    },
+    { id: 11, name: "Toys", checked: false },
+  ];
 
-  const updatedData = (data, id, tofill, toupdate) => {
-  if (!data) return data;
+  const [tree, setTree] = useState<CheckboxItem[]>(checkboxesData);
 
-  return data.map((ele) => {
-    // if node matches
-    if (ele.id === id) {
-      return {
-        ...ele,
-        checked: !ele.checked,
-        children: ele.children
-          ? updatedData(ele.children, id, !ele.checked,true)
-          : ele.children,
-      };
-    }
-
-    if(toupdate){
-      return {
-        ...ele,
-        checked: tofill,
-        children: ele.children ? updatedData(ele.children,id,tofill,true) : ele.children
-      }
-    }
-
-    // otherwise traverse children
+  // 1. Recursive helper to force all descendants to match the parent's new state
+  const updateChildrenRecursive = (node: CheckboxItem, isChecked: boolean): CheckboxItem => {
     return {
-      ...ele,
-      children: ele.children
-        ? updatedData(ele.children, id,tofill)
-        : ele.children,
+      ...node,
+      checked: isChecked,
+      children: node.children?.map((child) => updateChildrenRecursive(child, isChecked)),
     };
-  });
-};
+  };
 
-const elepressed = (id) => {
-  setData((prev) => updatedData(prev, id,false,false));
-};
+  // 2. Main recursive function to find the target and update parents on the way up
+  const updateTree = (data: CheckboxItem[], targetId: number): CheckboxItem[] => {
+    return data.map((node) => {
+      let newNode = { ...node };
 
+      if (newNode.id === targetId) {
+        // Toggle logic: If true, go false. If false or indeterminate, go true.
+        const nextStatus = newNode.checked === true ? false : true;
+        return updateChildrenRecursive(newNode, nextStatus);
+      }
 
- 
+      if (newNode.children) {
+        newNode.children = updateTree(newNode.children, targetId);
 
-  const renderdata = (data) => {
-    if (!data || data.length === 0) return null;
-     return (data.map((ele,ind)=>{
-            return (
-              <View style={{marginLeft: 15}}>
-                <View style={{flexDirection: 'row', margin : 4}}>
-                    <Pressable style={{borderWidth: 2, width: 20, margin: 2, backgroundColor: ele.checked && '#000000'}} onPress={()=>elepressed(ele.id)}></Pressable>
-                    <Text >{ele.label}</Text>
-                </View>
-                 {renderdata(ele.children)}
-              </View>
-            )
-         })
-     )
- }
+        // After updating children, determine this node's status based on them
+        const allChecked = newNode.children.every((c) => c.checked === true);
+        const noneChecked = newNode.children.every((c) => c.checked === false);
+        const someCheckedOrIndeterminate = newNode.children.some(
+          (c) => c.checked === true || c.checked === "indeterminate"
+        );
+
+        if (allChecked) {
+          newNode.checked = true;
+        } else if (someCheckedOrIndeterminate) {
+          newNode.checked = "indeterminate";
+        } else {
+          newNode.checked = false;
+        }
+      }
+
+      return newNode;
+    });
+  };
+
+  const handleClick = (id: number) => {
+    setTree((prevTree) => updateTree(prevTree, id));
+  };
+
+  // 3. Recursive Render Helper
+  const renderCheckboxes = (data: CheckboxItem[]) => {
+    return data.map((item) => (
+      <div key={item.id} style={{ marginLeft: 20, userSelect: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0" }}>
+          <div
+            onClick={() => handleClick(item.id)}
+            style={{
+              width: 16,
+              height: 16,
+              border: "1px solid #333",
+              borderRadius: "3px",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: item.checked === true ? "red" : "white",
+              transition: "background-color 0.2s",
+            }}
+          >
+            {item.checked === "indeterminate" && (
+              <div style={{ width: 8, height: 2, backgroundColor: "#666" }} />
+            )}
+          </div>
+          <span style={{ fontSize: "14px", fontFamily: "sans-serif" }}>{item.name}</span>
+        </div>
+        {item.children && renderCheckboxes(item.children)}
+      </div>
+    ));
+  };
 
   return (
-    <View style={styles.container}>
-      { renderdata(data)}
-    </View>
+    <div style={{ padding: "20px" }}>
+      <h2>Recursive Checkbox Tree</h2>
+      <hr />
+      {renderCheckboxes(tree)}
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    color: "#fff",
-    fontSize: 24,
-    marginBottom: 20,
-  },
-  row: {
-    flexDirection: "row",
-  },
-  starEmpty: {
-
-    color: "#555",
-    position: "absolute",
-  },
-  starFilled: {
-
-    color: "#FFD700",
-  },
-  starFillWrapper: {
-    overflow: "hidden",
-    position: "absolute",
-  },
-  text: {
-    color: "#fff",
-    marginTop: 20,
-    fontSize: 18,
-  },
-});
